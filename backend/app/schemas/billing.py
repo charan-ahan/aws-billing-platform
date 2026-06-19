@@ -33,3 +33,5 @@ class BillingRecordResponse(BillingRecordCreate):
 
     class Config:
         from_attributes = True
+class BillingRecordUpdate(BillingRecordCreate):
+    pass

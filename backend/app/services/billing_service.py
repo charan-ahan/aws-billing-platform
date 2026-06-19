@@ -1,7 +1,10 @@
 from sqlalchemy.orm import Session
 
 from backend.app.models.billing_record import BillingRecord
-from backend.app.schemas.billing import BillingRecordCreate
+from backend.app.schemas.billing import (
+    BillingRecordCreate,
+    BillingRecordUpdate,
+)
 
 
 def create_billing_record(db: Session, billing: BillingRecordCreate):
@@ -32,3 +35,52 @@ def create_billing_record(db: Session, billing: BillingRecordCreate):
     db.refresh(db_record)
 
     return db_record
+
+def get_billing_records(db: Session):
+    """
+    Get all billing records.
+    """
+    return db.query(BillingRecord).all()
+def get_billing_record_by_id(db: Session, billing_id: int):
+    """
+    Get one billing record by its ID.
+    """
+    return (
+        db.query(BillingRecord)
+        .filter(BillingRecord.id == billing_id)
+        .first()
+    )
+def update_billing_record(db: Session, billing_id: int, billing: BillingRecordUpdate):
+    """
+    Update an existing billing record.
+    """
+
+    db_record = (
+        db.query(BillingRecord)
+        .filter(BillingRecord.id == billing_id)
+        .first()
+    )
+
+    if not db_record:
+        return None
+
+    for key, value in billing.dict().items():
+        setattr(db_record, key, value)
+
+    db.commit()
+    db.refresh(db_record)
+
+    return db_record
+
+def delete_billing_record(db: Session, billing_id: int):
+    bill = db.query(BillingRecord).filter(
+        BillingRecord.id == billing_id
+    ).first()
+
+    if bill is None:
+        return None
+
+    db.delete(bill)
+    db.commit()
+
+    return bill
