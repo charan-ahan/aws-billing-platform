@@ -1,0 +1,11 @@
+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
+
+AQ.Ab8RN6LdbsdwwaIGIbQ1TJvpDft3eswGERvp-2A683cyZgYvYA
+
+
+cd ~/Projects/aws-billing-platform
+echo "GEMINI_API_KEY=AQ.Ab8RN6LdbsdwwaIGIbQ1TJvpDft3eswGERvp-2A683cyZgYvYA" >> .env
+
+groqqqqqqqqqqqqqqqqqqq
+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
+echo "GROQ_API_KEY=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" >> .env

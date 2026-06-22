@@ -1,86 +1,220 @@
-from typing import List
-
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status, Query
 from sqlalchemy.orm import Session
+from typing import List, Optional
+import pandas as pd
+import io
 
 from backend.app.database.dependencies import get_db
-from backend.app.schemas.billing import (
-    BillingRecordCreate,
-    BillingRecordResponse,
-    BillingRecordUpdate,
-)
-from backend.app.services.billing_service import (
-    create_billing_record,
-    get_billing_records,
-    get_billing_record_by_id,
-    update_billing_record,
-    delete_billing_record,
-)
+from backend.app.schemas.billing import BillingRecordCreate, BillingRecordResponse, BillingRecordUpdate
+from backend.app.services.billing_service import BillingService
 
-router = APIRouter(
-    prefix="/billing",
-    tags=["Billing"],
-)
+# ===== ROUTER DEFINITION =====
+router = APIRouter(prefix="/billing", tags=["billing"])
 
+# ===== CRUD ENDPOINTS =====
 
-@router.post("/", response_model=BillingRecordResponse)
-def create_bill(
-    billing: BillingRecordCreate,
-    db: Session = Depends(get_db),
+@router.post("/", response_model=BillingRecordResponse, status_code=status.HTTP_201_CREATED)
+def create_billing_record(
+    billing_data: BillingRecordCreate,
+    db: Session = Depends(get_db)
 ):
-    return create_billing_record(db, billing)
-
+    """Create a new billing record."""
+    service = BillingService(db)
+    return service.create_billing_record(billing_data)
 
 @router.get("/", response_model=List[BillingRecordResponse])
-def get_all_bills(
-    db: Session = Depends(get_db),
+def get_billing_records(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db)
 ):
-    return get_billing_records(db)
-
+    """Get all billing records with pagination."""
+    service = BillingService(db)
+    return service.get_billing_records(skip=skip, limit=limit)
 
 @router.get("/{billing_id}", response_model=BillingRecordResponse)
-def get_bill_by_id(
+def get_billing_record(
     billing_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db)
 ):
-    bill = get_billing_record_by_id(db, billing_id)
-
-    if bill is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Billing record not found",
-        )
-
-    return bill
-
+    """Get a specific billing record by ID."""
+    service = BillingService(db)
+    record = service.get_billing_record_by_id(billing_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Billing record not found")
+    return record
 
 @router.put("/{billing_id}", response_model=BillingRecordResponse)
-def update_bill(
+def update_billing_record(
     billing_id: int,
-    billing: BillingRecordUpdate,
-    db: Session = Depends(get_db),
+    billing_data: BillingRecordUpdate,
+    db: Session = Depends(get_db)
 ):
-    bill = update_billing_record(db, billing_id, billing)
+    """Update a billing record."""
+    service = BillingService(db)
+    record = service.update_billing_record(billing_id, billing_data)
+    if not record:
+        raise HTTPException(status_code=404, detail="Billing record not found")
+    return record
 
-    if bill is None:
+@router.delete("/{billing_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_billing_record(
+    billing_id: int,
+    db: Session = Depends(get_db)
+):
+    """Delete a billing record."""
+    service = BillingService(db)
+    success = service.delete_billing_record(billing_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Billing record not found")
+    return None
+
+# ===== CSV IMPORT =====
+
+@router.post("/import-csv", status_code=status.HTTP_201_CREATED)
+async def import_csv(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Import billing records from a CSV file.
+    
+    The CSV must have columns matching the BillingRecord model fields.
+    """
+    # Validate file type
+    if not file.filename.endswith('.csv'):
         raise HTTPException(
-            status_code=404,
-            detail="Billing record not found",
+            status_code=400,
+            detail="File must be a CSV"
+        )
+    
+    try:
+        # Read CSV content
+        contents = await file.read()
+        df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
+        
+        # Check if dataframe is empty
+        if df.empty:
+            raise HTTPException(
+                status_code=400,
+                detail="CSV file is empty"
+            )
+        
+        # Convert account IDs to strings
+        df['payer_account_id'] = df['payer_account_id'].astype(str)
+        df['usage_account_id'] = df['usage_account_id'].astype(str)
+        
+        # Convert DataFrame to list of dicts
+        records = df.to_dict(orient='records')
+        
+        # Create billing records using service
+        service = BillingService(db)
+        created_count = 0
+        errors = []
+        
+        for idx, record_data in enumerate(records):
+            try:
+                # Convert date strings to datetime if needed
+                if 'usage_start' in record_data and isinstance(record_data['usage_start'], str):
+                    record_data['usage_start'] = pd.to_datetime(record_data['usage_start']).isoformat()
+                if 'usage_end' in record_data and isinstance(record_data['usage_end'], str):
+                    record_data['usage_end'] = pd.to_datetime(record_data['usage_end']).isoformat()
+                
+                # Create record using schema
+                billing_record = BillingRecordCreate(**record_data)
+                service.create_billing_record(billing_record)
+                created_count += 1
+            except Exception as e:
+                errors.append({
+                    "row": idx + 1,
+                    "error": str(e),
+                    "data": record_data
+                })
+        
+        return {
+            "message": f"Successfully imported {created_count} records",
+            "total_rows": len(records),
+            "created_count": created_count,
+            "errors": errors
+        }
+        
+    except pd.errors.EmptyDataError:
+        raise HTTPException(
+            status_code=400,
+            detail="CSV file is empty or malformed"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error processing CSV: {str(e)}"
         )
 
-    return bill 
+# ===== ANALYTICS ENDPOINTS =====
 
-@router.delete("/{billing_id}", response_model=BillingRecordResponse)
-def delete_bill(
-    billing_id: int,
-    db: Session = Depends(get_db),
+@router.get("/analytics/summary")
+def get_analytics_summary(
+    start_date: Optional[str] = Query(None, description="Filter by start date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="Filter by end date (YYYY-MM-DD)"),
+    db: Session = Depends(get_db)
 ):
-    bill = delete_billing_record(db, billing_id)
+    """
+    Get summary analytics with optional date filtering.
+    
+    - start_date: Filter records from this date (YYYY-MM-DD)
+    - end_date: Filter records up to this date (YYYY-MM-DD)
+    - If no dates provided, returns all records
+    """
+    service = BillingService(db)
+    return service.get_analytics_summary(start_date, end_date)
 
-    if bill is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Billing record not found",
-        )
+@router.get("/analytics/monthly-trend")
+def get_monthly_trend(
+    months: int = Query(12, description="Number of months to include (default: 12)"),
+    start_date: Optional[str] = Query(None, description="Filter by start date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="Filter by end date (YYYY-MM-DD)"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get monthly cost trend with optional date filtering.
+    
+    - months: Number of months to include (default: 12)
+    - start_date: Filter records from this date (YYYY-MM-DD)
+    - end_date: Filter records up to this date (YYYY-MM-DD)
+    - If both start_date and end_date provided, months parameter is ignored
+    """
+    service = BillingService(db)
+    return service.get_monthly_trend(months, start_date, end_date)
 
-    return bill
+@router.get("/analytics/top-services")
+def get_top_services(
+    limit: int = Query(5, description="Number of services to return (default: 5)"),
+    start_date: Optional[str] = Query(None, description="Filter by start date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="Filter by end date (YYYY-MM-DD)"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get top N services with optional date filtering.
+    """
+    service = BillingService(db)
+    return service.get_top_services(limit, start_date, end_date)
+
+@router.get("/analytics/top-projects")
+def get_top_projects(
+    limit: int = Query(5, description="Number of projects to return (default: 5)"),
+    start_date: Optional[str] = Query(None, description="Filter by start date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="Filter by end date (YYYY-MM-DD)"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get top N projects with optional date filtering.
+    """
+    service = BillingService(db)
+    return service.get_top_projects(limit, start_date, end_date)
+
+@router.get("/analytics/current-month")
+def get_current_month_summary(db: Session = Depends(get_db)):
+    """
+    Get current month's total cost and comparison with previous month.
+    """
+    service = BillingService(db)
+    return service.get_current_month_summary()
