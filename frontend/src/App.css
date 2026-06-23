@@ -153,9 +153,15 @@ body {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
-.kpi-card:nth-child(2) { border-left-color: #60a5fa; }
-.kpi-card:nth-child(3) { border-left-color: #93c5fd; }
-.kpi-card:nth-child(4) { border-left-color: #bfdbfe; }
+.kpi-card:nth-child(2) {
+  border-left-color: #60a5fa;
+}
+.kpi-card:nth-child(3) {
+  border-left-color: #93c5fd;
+}
+.kpi-card:nth-child(4) {
+  border-left-color: #bfdbfe;
+}
 
 .kpi-label {
   font-size: clamp(0.65rem, 0.8vw, 0.8rem);
@@ -285,7 +291,6 @@ body {
   margin-top: 24px;
 }
 
-/* Loading & Error */
 .loading, .error {
   display: flex;
   justify-content: center;
@@ -301,28 +306,20 @@ body {
   color: #ef4444;
 }
 
-/* ======================================== */
-/* RESPONSIVE BREAKPOINTS */
-/* ======================================== */
-
 /* Tablet */
 @media (max-width: 1024px) {
   .App {
     padding: 16px;
   }
-  
   .kpi-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
   .charts-grid {
     grid-template-columns: 1fr;
   }
-  
   .bottom-grid {
     grid-template-columns: 1fr;
   }
-  
   .chart-card.full-width {
     grid-column: 1;
   }
@@ -333,62 +330,49 @@ body {
   .App {
     padding: 12px;
   }
-  
   .header {
     padding: 16px 20px;
   }
-  
   .header h1 {
     font-size: 1.3rem;
   }
-  
   .header-meta {
     flex-direction: column;
     gap: 2px;
     align-items: flex-start;
   }
-  
   .kpi-grid {
     grid-template-columns: 1fr 1fr;
     gap: 10px;
   }
-  
   .kpi-card {
     padding: 14px 16px;
   }
-  
   .kpi-value {
     font-size: 1.4rem;
   }
-  
   .filters {
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
   }
-  
   .filter-group {
     flex-wrap: wrap;
   }
-  
   .filter-group input {
     min-width: 100px;
     max-width: 100%;
   }
-  
   .btn-primary, .btn-secondary {
     padding: 10px;
     text-align: center;
   }
-  
   .charts-grid {
     gap: 12px;
   }
-  
   .chart-card {
     padding: 14px 16px;
   }
-  
   .bottom-grid {
     gap: 12px;
   }
@@ -399,73 +383,58 @@ body {
   .App {
     padding: 8px;
   }
-  
   .header {
     padding: 12px 16px;
     border-radius: 8px;
   }
-  
   .header h1 {
     font-size: 1.1rem;
   }
-  
   .header p {
     font-size: 0.75rem;
   }
-  
   .kpi-grid {
     grid-template-columns: 1fr 1fr;
     gap: 8px;
   }
-  
   .kpi-card {
     padding: 10px 12px;
     border-radius: 8px;
   }
-  
   .kpi-value {
     font-size: 1.1rem;
   }
-  
   .kpi-label {
     font-size: 0.6rem;
   }
-  
   .kpi-trend {
     font-size: 0.6rem;
   }
-  
   .filters {
     padding: 12px;
     border-radius: 8px;
     gap: 8px;
   }
-  
   .filter-group input {
     padding: 6px 8px;
     font-size: 0.8rem;
     min-width: 80px;
   }
-  
   .btn-primary, .btn-secondary {
     padding: 8px 12px;
     font-size: 0.8rem;
   }
-  
   .chart-card {
     padding: 10px 12px;
     border-radius: 8px;
   }
-  
   .chart-header h3 {
     font-size: 0.8rem;
   }
-  
   .stat-row {
     font-size: 0.75rem;
     padding: 6px 8px;
   }
-  
   .bottom-grid {
     gap: 8px;
   }
