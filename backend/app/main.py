@@ -12,15 +12,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# ----- CORS Configuration - Allow ALL origins -----
+# ----- CORS Configuration -----
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# ------------------------------------------------
 
 app.include_router(billing_router)
 app.include_router(chatbot_router)
