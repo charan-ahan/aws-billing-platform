@@ -24,7 +24,7 @@ const COLORS = {
   cardBg: '#ffffff'
 };
 
-const PIE_COLORS = ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe'];
+const PIE_COLORS = ['#3b82f6', '#60a5fa', '#93c5fd', '#06090d', '#dbeafe'];
 
 function App() {
   const [loading, setLoading] = useState(true);
