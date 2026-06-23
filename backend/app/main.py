@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware  # <-- ADD THIS IMPORT
+from fastapi.middleware.cors import CORSMiddleware
 from backend.app.api.billing import router as billing_router
 from backend.app.api.chatbot import router as chatbot_router
 
@@ -12,22 +12,16 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# ----- CORS Configuration -----
-# List of allowed origins (your frontend domains)
-origins = [
-    "https://aws-billing-platform-2.onrender.com",
-]
-
+# ----- CORS Configuration - Allow ALL origins -----
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,           # Allow these origins
+    allow_origins=["*"],  # Allow all origins
     allow_credentials=True,
-    allow_methods=["*"],             # Allow all HTTP methods
-    allow_headers=["*"],             # Allow all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-# ------------------------------
+# ------------------------------------------------
 
-# Include routers
 app.include_router(billing_router)
 app.include_router(chatbot_router)
 
