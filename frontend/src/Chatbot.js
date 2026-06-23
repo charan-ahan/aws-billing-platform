@@ -3,6 +3,7 @@ import axios from 'axios';
 import './Chatbot.css';
 
 const API_BASE_URL = 'https://aws-billing-platform.onrender.com';
+
 function Chatbot() {
   const [messages, setMessages] = useState([
     { 
@@ -30,15 +31,20 @@ function Chatbot() {
     setLoading(true);
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/chatbot/ask`, null, {
-        params: { query: input }
-      });
+      // ✅ Sending POST request (this is the correct method)
+      console.log('Sending POST to chatbot API'); // Added for debugging
+      const response = await axios.post(
+        `${API_BASE_URL}/chatbot/ask`,
+        null,
+        { params: { query: input } }
+      );
 
       setMessages(prev => [...prev, { 
         text: response.data.response, 
         sender: 'bot' 
       }]);
     } catch (error) {
+      console.error('Chatbot error:', error);
       setMessages(prev => [...prev, { 
         text: "❌ Error: Could not get response. Make sure the backend is running.", 
         sender: 'bot' 
