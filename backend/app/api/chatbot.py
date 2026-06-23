@@ -45,7 +45,7 @@ def ask_chatbot(
     }
     
     # ----- DEBUG: Check if GROQ_API_KEY is set -----
-    print(f"GROQ_API_KEY set: {bool(GROQ_API_KEY)}")
+    print(f"GROQ_API_KEY set: {bool(GROQ_API_KEY)}", flush=True)
     # ------------------------------------------------
     
     # Build prompt
