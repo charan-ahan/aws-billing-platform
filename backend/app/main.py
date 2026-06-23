@@ -15,7 +15,7 @@ app = FastAPI(
 # ----- CORS Configuration -----
 # List of allowed origins (your frontend domains)
 origins = [
-    "https://billing-analytics-dashboard.onrender.com",  # Your live frontend
+    "https://aws-billing-platform-2.onrender.com",  # Your live frontend
     # Add localhost if needed for testing:
     # "http://localhost:3000",
 ]

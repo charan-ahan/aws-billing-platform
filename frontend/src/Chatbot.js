@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import './Chatbot.css';
 
-const API_BASE_URL = 'https://aws-billing-platform.onrender.com';
+const API_BASE_URL = 'https://aws-billing-platform-2.onrender.com';
 
 function Chatbot() {
   const [messages, setMessages] = useState([

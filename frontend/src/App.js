@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import './App.css';
 import Chatbot from './Chatbot';
-const API_BASE_URL = 'https://aws-billing-platform.onrender.com';
+const API_BASE_URL = 'https://aws-billing-platform-2.onrender.com';
 
 // Professional color palette
 const COLORS = {
