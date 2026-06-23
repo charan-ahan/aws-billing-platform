@@ -3,13 +3,25 @@ load_dotenv()
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from backend.app.api.billing import router as billing_router
 from backend.app.api.chatbot import router as chatbot_router
+from backend.app.database.base import Base
+from backend.app.database.session import engine
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create tables on startup
+    Base.metadata.create_all(bind=engine)
+    yield
+    # Cleanup on shutdown (optional)
+    # engine.dispose()
 
 app = FastAPI(
     title="AWS Billing Analytics Platform API",
     description="Backend API for AWS Billing Analytics Platform",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # ----- CORS Configuration -----
