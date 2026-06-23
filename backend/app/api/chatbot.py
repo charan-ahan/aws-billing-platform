@@ -58,7 +58,7 @@ DATA:
 - Environments: {data_context['environments']}
 - Current Month: {data_context['current_month']['month']} cost: ${data_context['current_month']['cost']:.2f}
 - Previous Month: {data_context['current_month']['previous_month']} cost: ${data_context['current_month']['previous_cost']:.2f}
-- Change: {data_context['current_month']['change_percent']:.1f}%
+- Change: {f"{data_context['current_month']['change_percent']:.1f}%" if data_context['current_month']['change_percent'] is not None else "N/A"}
 
 USER QUESTION: {query}
 
