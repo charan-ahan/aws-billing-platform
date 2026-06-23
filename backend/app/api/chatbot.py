@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 import os
+import sys
 from datetime import datetime
 
 from backend.app.database.dependencies import get_db
@@ -44,9 +45,9 @@ def ask_chatbot(
         }
     }
     
-    # ----- DEBUG: Check if GROQ_API_KEY is set -----
+    # ----- DEBUG: Check if GROQ_API_KEY is set (flush ensures it shows in logs) -----
     print(f"GROQ_API_KEY set: {bool(GROQ_API_KEY)}", flush=True)
-    # ------------------------------------------------
+    # --------------------------------------------------------------------------------
     
     # Build prompt
     prompt = f"""
@@ -99,7 +100,7 @@ ANSWER:
                 "data": data_context
             }
         except Exception as e:
-            print(f"Groq error: {e}")
+            print(f"Groq error: {e}", flush=True)
             # Fall through to next option
     
     # Fallback: Rule-based responses
