@@ -4,7 +4,10 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, Legend, ComposedChart, Area
 } from 'recharts';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
+import SkeletonLoader from './SkeletonLoader';
 
 const API_BASE_URL = 'https://aws-billing-platform.onrender.com';
 
@@ -146,7 +149,13 @@ const MOCK_DATA = {
     { id: 8, date: "2026-06-22", service: "Amazon S3", account: "Prod-Account-1", amount: 92.80, category: "Storage" },
     { id: 9, date: "2026-06-22", service: "Amazon Redshift", account: "Prod-Account-2", amount: 215.40, category: "Database" },
     { id: 10, date: "2026-06-21", service: "AWS Lambda", account: "Prod-Account-1", amount: 38.75, category: "Compute" }
-  ]
+  ],
+  budget: {
+    total_budget: 60000,
+    spent: 45280.75,
+    remaining: 14719.25,
+    percent_used: 75.47
+  }
 };
 
 const COLORS = ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe', '#e0e7ff'];
@@ -155,6 +164,8 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [currentPage, setCurrentPage] = useState('home');
+  const [isDark, setIsDark] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
 
   const [filters, setFilters] = useState({
     account: 'all',
@@ -179,30 +190,40 @@ function App() {
   const [environmentBreakdown, setEnvironmentBreakdown] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [accounts, setAccounts] = useState([]);
+  const [budget, setBudget] = useState(null);
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      setSummary(MOCK_DATA.summary);
-      setServiceBreakdown(MOCK_DATA.service_breakdown);
-      setCategoryBreakdown(MOCK_DATA.category_breakdown);
-      setRegionBreakdown(MOCK_DATA.region_breakdown);
-      setInstanceBreakdown(MOCK_DATA.instance_breakdown);
-      setDataTransfer(MOCK_DATA.data_transfer);
-      setSavingsPlans(MOCK_DATA.savings_plans);
-      setMonthlyTrend(MOCK_DATA.monthly_trend);
-      setHourlyTrend(MOCK_DATA.hourly_trend);
-      setTopServices(MOCK_DATA.top_services);
-      setTopProjects(MOCK_DATA.top_projects);
-      setEnvironmentBreakdown(MOCK_DATA.environment_breakdown);
-      setTransactions(MOCK_DATA.transactions);
-      setAccounts(MOCK_DATA.summary.accounts);
-      await new Promise(resolve => setTimeout(resolve, 800));
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    }
-    setLoading(false);
+  const toggleTheme = () => {
+    setIsDark(!isDark);
+    document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    toast.info(`Switched to ${isDark ? 'Light' : 'Dark'} mode`);
   };
+
+ const fetchData = async () => {
+  setLoading(true);
+  try {
+    setSummary(MOCK_DATA.summary);
+    setServiceBreakdown(MOCK_DATA.service_breakdown);
+    setCategoryBreakdown(MOCK_DATA.category_breakdown);
+    setRegionBreakdown(MOCK_DATA.region_breakdown);
+    setInstanceBreakdown(MOCK_DATA.instance_breakdown);
+    setDataTransfer(MOCK_DATA.data_transfer);
+    setSavingsPlans(MOCK_DATA.savings_plans);
+    setMonthlyTrend(MOCK_DATA.monthly_trend);
+    setHourlyTrend(MOCK_DATA.hourly_trend);
+    setTopServices(MOCK_DATA.top_services);
+    setTopProjects(MOCK_DATA.top_projects);
+    setEnvironmentBreakdown(MOCK_DATA.environment_breakdown);
+    setTransactions(MOCK_DATA.transactions);
+    setAccounts(MOCK_DATA.summary.accounts);
+    setBudget(MOCK_DATA.budget);
+    setLastUpdated(new Date());
+    toast.success('Data refreshed successfully!');
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    toast.error('Failed to load data');
+  }
+  setLoading(false);
+};
 
   useEffect(() => {
     fetchData();
@@ -220,6 +241,7 @@ function App() {
 
   const applyFilters = () => {
     fetchData();
+    toast.info('Filters applied');
   };
 
   const resetFilters = () => {
@@ -232,6 +254,7 @@ function App() {
       endDate: ''
     });
     fetchData();
+    toast.info('Filters reset');
   };
 
   // ===== EXPORT FUNCTIONS =====
@@ -253,6 +276,7 @@ function App() {
     link.href = URL.createObjectURL(blob);
     link.download = "billing_data.csv";
     link.click();
+    toast.success('CSV exported successfully!');
   };
 
   const exportPDF = () => {
@@ -267,16 +291,19 @@ function App() {
           const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
           pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
           pdf.save("dashboard.pdf");
+          toast.success('PDF exported successfully!');
         });
       });
     });
   };
 
-  if (loading) return <div className="loading">Loading dashboard...</div>;
+  if (loading) return <SkeletonLoader />;
   if (!summary) return <div className="error">Unable to load data.</div>;
 
   return (
-    <div className="App">
+    <div className="App" data-theme={isDark ? 'dark' : 'light'}>
+      <ToastContainer position="bottom-right" autoClose={3000} hideProgressBar={false} newestOnTop />
+      
       {/* ===== SIDEBAR ===== */}
       <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sidebar-header">
@@ -287,26 +314,59 @@ function App() {
         </div>
 
         <nav className="sidebar-nav">
-          <button className={`nav-item ${currentPage === 'home' ? 'active' : ''}`} onClick={() => setCurrentPage('home')}>
-            <i className="fas fa-home nav-icon"></i>{sidebarOpen && <span className="nav-label">Home</span>}
+          <button
+            className={`nav-item ${currentPage === 'home' ? 'active' : ''}`}
+            onClick={() => setCurrentPage('home')}
+          >
+            <i className="fas fa-home nav-icon"></i>
+            {sidebarOpen && <span className="nav-label">Home</span>}
           </button>
-          <button className={`nav-item ${currentPage === 'dashboard' ? 'active' : ''}`} onClick={() => setCurrentPage('dashboard')}>
-            <i className="fas fa-chart-pie nav-icon"></i>{sidebarOpen && <span className="nav-label">Dashboard</span>}
+          <button
+            className={`nav-item ${currentPage === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setCurrentPage('dashboard')}
+          >
+            <i className="fas fa-chart-pie nav-icon"></i>
+            {sidebarOpen && <span className="nav-label">Dashboard</span>}
           </button>
-          <button className={`nav-item ${currentPage === 'analytics' ? 'active' : ''}`} onClick={() => setCurrentPage('analytics')}>
-            <i className="fas fa-chart-line nav-icon"></i>{sidebarOpen && <span className="nav-label">Analytics</span>}
+          <button
+            className={`nav-item ${currentPage === 'analytics' ? 'active' : ''}`}
+            onClick={() => setCurrentPage('analytics')}
+          >
+            <i className="fas fa-chart-line nav-icon"></i>
+            {sidebarOpen && <span className="nav-label">Analytics</span>}
           </button>
-          <button className={`nav-item ${currentPage === 'reports' ? 'active' : ''}`} onClick={() => setCurrentPage('reports')}>
-            <i className="fas fa-file-alt nav-icon"></i>{sidebarOpen && <span className="nav-label">Reports</span>}
+          <button
+            className={`nav-item ${currentPage === 'reports' ? 'active' : ''}`}
+            onClick={() => setCurrentPage('reports')}
+          >
+            <i className="fas fa-file-alt nav-icon"></i>
+            {sidebarOpen && <span className="nav-label">Reports</span>}
           </button>
-          <button className={`nav-item ${currentPage === 'settings' ? 'active' : ''}`} onClick={() => setCurrentPage('settings')}>
-            <i className="fas fa-cog nav-icon"></i>{sidebarOpen && <span className="nav-label">Settings</span>}
+          <button
+            className={`nav-item ${currentPage === 'settings' ? 'active' : ''}`}
+            onClick={() => setCurrentPage('settings')}
+          >
+            <i className="fas fa-cog nav-icon"></i>
+            {sidebarOpen && <span className="nav-label">Settings</span>}
+          </button>
+          <button
+            className="nav-item"
+            onClick={toggleTheme}
+          >
+            <i className={`fas ${isDark ? 'fa-sun' : 'fa-moon'} nav-icon`}></i>
+            {sidebarOpen && <span className="nav-label">{isDark ? 'Light Mode' : 'Dark Mode'}</span>}
           </button>
         </nav>
 
         <div className="sidebar-footer">
-          <button className="nav-item"><i className="fas fa-comment-dots nav-icon"></i>{sidebarOpen && <span className="nav-label">Chat History</span>}</button>
-          <button className="nav-item"><i className="fas fa-user-circle nav-icon"></i>{sidebarOpen && <span className="nav-label">Profile</span>}</button>
+          <button className="nav-item">
+            <i className="fas fa-comment-dots nav-icon"></i>
+            {sidebarOpen && <span className="nav-label">Chat History</span>}
+          </button>
+          <button className="nav-item">
+            <i className="fas fa-user-circle nav-icon"></i>
+            {sidebarOpen && <span className="nav-label">Profile</span>}
+          </button>
         </div>
       </aside>
 
@@ -342,16 +402,23 @@ function App() {
         {/* ===== DASHBOARD PAGE ===== */}
         {currentPage === 'dashboard' && (
           <div id="dashboard-content" className="page-content">
-            <h2>Dashboard</h2>
-            <p className="page-subtitle">Unified cost intelligence across your AWS environment</p>
+            <div className="dashboard-header">
+              <div>
+                <h2>Dashboard</h2>
+                <p className="page-subtitle">Unified cost intelligence across your AWS environment</p>
+              </div>
+              <div className="last-updated">
+                <i className="fas fa-clock"></i> Last updated: {lastUpdated.toLocaleString()}
+              </div>
+            </div>
 
-            {/* EXPORT BUTTONS */}
+            {/* ===== EXPORT BUTTONS ===== */}
             <div className="export-buttons">
               <button className="btn-export" onClick={exportCSV}><i className="fas fa-file-csv"></i> Export CSV</button>
               <button className="btn-export" onClick={exportPDF}><i className="fas fa-file-pdf"></i> Export PDF</button>
             </div>
 
-            {/* FILTERS */}
+            {/* ===== FILTERS ===== */}
             <div className="filters">
               <div className="filter-group">
                 <label><i className="fas fa-users"></i> Account</label>
@@ -392,7 +459,7 @@ function App() {
               <button className="btn-secondary" onClick={resetFilters}><i className="fas fa-undo"></i> Reset</button>
             </div>
 
-            {/* KPI CARDS */}
+            {/* ===== KPI CARDS ===== */}
             <div className="kpi-grid">
               <div className="kpi-card"><div className="kpi-label"><i className="fas fa-dollar-sign"></i> Total Cost</div><div className="kpi-value">{formatCurrency(summary.total_cost)}</div><div className="kpi-trend">Last 30 days</div></div>
               <div className="kpi-card"><div className="kpi-label"><i className="fas fa-calendar-day"></i> Daily Average</div><div className="kpi-value">{formatCurrency(summary.daily_avg || summary.total_cost / 30)}</div><div className="kpi-trend">Per day</div></div>
@@ -402,7 +469,25 @@ function App() {
               <div className="kpi-card"><div className="kpi-label"><i className="fas fa-arrow-right-arrow-left"></i> Data Transfer</div><div className="kpi-value">12.3 TB</div><div className="kpi-trend">Last 30 days</div></div>
             </div>
 
-            {/* CHARTS ROW 1 */}
+            {/* ===== BUDGET VS ACTUAL CHART ===== */}
+            {budget && (
+              <div className="budget-card">
+                <div className="budget-header">
+                  <h3><i className="fas fa-wallet"></i> Budget vs Actual</h3>
+                  <span className="chart-badge">{budget.percent_used.toFixed(1)}% used</span>
+                </div>
+                <div className="budget-bar">
+                  <div className="budget-fill" style={{ width: `${Math.min(budget.percent_used, 100)}%` }}></div>
+                </div>
+                <div className="budget-details">
+                  <span><strong>Budget:</strong> {formatCurrency(budget.total_budget)}</span>
+                  <span><strong>Spent:</strong> {formatCurrency(budget.spent)}</span>
+                  <span><strong>Remaining:</strong> {formatCurrency(budget.remaining)}</span>
+                </div>
+              </div>
+            )}
+
+            {/* ===== CHARTS ROW 1 ===== */}
             <div className="charts-grid">
               <div className="chart-card full-width">
                 <div className="chart-header"><h3><i className="fas fa-chart-simple"></i> Cost Trend ({filters.timeGrain})</h3><span className="chart-badge">{filters.timeGrain === 'hourly' ? 'Last 24 hours' : filters.timeGrain === 'daily' ? 'Last 30 days' : '12 months'}</span></div>
@@ -419,7 +504,7 @@ function App() {
               </div>
             </div>
 
-            {/* CHARTS ROW 2 */}
+            {/* ===== CHARTS ROW 2 ===== */}
             <div className="charts-grid">
               <div className="chart-card"><div className="chart-header"><h3><i className="fas fa-server"></i> Cost by Service</h3><span className="chart-badge">breakdown</span></div>
                 <ResponsiveContainer width="100%" height={260}>
@@ -444,7 +529,7 @@ function App() {
               </div>
             </div>
 
-            {/* CHARTS ROW 3 */}
+            {/* ===== CHARTS ROW 3 ===== */}
             <div className="charts-grid">
               <div className="chart-card"><div className="chart-header"><h3><i className="fas fa-globe"></i> Cost by Region</h3><span className="chart-badge">geographic</span></div>
                 <ResponsiveContainer width="100%" height={240}>
@@ -470,7 +555,7 @@ function App() {
               </div>
             </div>
 
-            {/* DATA TRANSFER CHART */}
+            {/* ===== DATA TRANSFER CHART ===== */}
             <div className="charts-grid">
               <div className="chart-card full-width"><div className="chart-header"><h3><i className="fas fa-arrow-right-arrow-left"></i> Data Transfer (In / Out / VPC)</h3><span className="chart-badge">network</span></div>
                 <ResponsiveContainer width="100%" height={260}>
@@ -488,7 +573,7 @@ function App() {
               </div>
             </div>
 
-            {/* BOTTOM GRID */}
+            {/* ===== BOTTOM GRID ===== */}
             <div className="bottom-grid">
               <div className="chart-card"><div className="chart-header"><h3><i className="fas fa-project-diagram"></i> Top Projects</h3><span className="chart-badge">by cost</span></div>
                 <ResponsiveContainer width="100%" height={220}>
@@ -513,7 +598,7 @@ function App() {
               </div>
             </div>
 
-            {/* SAVINGS PLANS PANEL */}
+            {/* ===== SAVINGS PLANS PANEL ===== */}
             <div className="savings-plans-panel">
               <div className="savings-plans-header"><h3><i className="fas fa-piggy-bank"></i> Savings Plans & Reserved Instances</h3><span className="chart-badge">optimization</span></div>
               <div className="savings-plans-grid">
@@ -526,7 +611,7 @@ function App() {
               </div>
             </div>
 
-            {/* TRANSACTION TABLE */}
+            {/* ===== TRANSACTION TABLE ===== */}
             <div className="chart-card full-width" style={{ marginTop: '16px' }}>
               <div className="chart-header"><h3><i className="fas fa-list-ul"></i> Recent Transactions</h3><span className="chart-badge">last 10</span></div>
               <div className="table-container">
