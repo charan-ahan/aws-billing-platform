@@ -4,14 +4,11 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, Legend, ComposedChart, Area
 } from 'recharts';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
-import SkeletonLoader from './SkeletonLoader';
 
 const API_BASE_URL = 'https://aws-billing-platform.onrender.com';
 
-// ===== COMPREHENSIVE MOCK DATA =====
+// ===== MOCK DATA =====
 const MOCK_DATA = {
   summary: {
     total_records: 15420,
@@ -166,6 +163,8 @@ function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const [isDark, setIsDark] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
+  const [refreshInterval, setRefreshInterval] = useState(null);
 
   const [filters, setFilters] = useState({
     account: 'all',
@@ -195,39 +194,52 @@ function App() {
   const toggleTheme = () => {
     setIsDark(!isDark);
     document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    toast.info(`Switched to ${isDark ? 'Light' : 'Dark'} mode`);
   };
 
- const fetchData = async () => {
-  setLoading(true);
-  try {
-    setSummary(MOCK_DATA.summary);
-    setServiceBreakdown(MOCK_DATA.service_breakdown);
-    setCategoryBreakdown(MOCK_DATA.category_breakdown);
-    setRegionBreakdown(MOCK_DATA.region_breakdown);
-    setInstanceBreakdown(MOCK_DATA.instance_breakdown);
-    setDataTransfer(MOCK_DATA.data_transfer);
-    setSavingsPlans(MOCK_DATA.savings_plans);
-    setMonthlyTrend(MOCK_DATA.monthly_trend);
-    setHourlyTrend(MOCK_DATA.hourly_trend);
-    setTopServices(MOCK_DATA.top_services);
-    setTopProjects(MOCK_DATA.top_projects);
-    setEnvironmentBreakdown(MOCK_DATA.environment_breakdown);
-    setTransactions(MOCK_DATA.transactions);
-    setAccounts(MOCK_DATA.summary.accounts);
-    setBudget(MOCK_DATA.budget);
-    setLastUpdated(new Date());
-    toast.success('Data refreshed successfully!');
-  } catch (error) {
-    console.error('Error fetching data:', error);
-    toast.error('Failed to load data');
-  }
-  setLoading(false);
-};
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      setSummary(MOCK_DATA.summary);
+      setServiceBreakdown(MOCK_DATA.service_breakdown);
+      setCategoryBreakdown(MOCK_DATA.category_breakdown);
+      setRegionBreakdown(MOCK_DATA.region_breakdown);
+      setInstanceBreakdown(MOCK_DATA.instance_breakdown);
+      setDataTransfer(MOCK_DATA.data_transfer);
+      setSavingsPlans(MOCK_DATA.savings_plans);
+      setMonthlyTrend(MOCK_DATA.monthly_trend);
+      setHourlyTrend(MOCK_DATA.hourly_trend);
+      setTopServices(MOCK_DATA.top_services);
+      setTopProjects(MOCK_DATA.top_projects);
+      setEnvironmentBreakdown(MOCK_DATA.environment_breakdown);
+      setTransactions(MOCK_DATA.transactions);
+      setAccounts(MOCK_DATA.summary.accounts);
+      setBudget(MOCK_DATA.budget);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Auto-refresh every 5 minutes if enabled
+  useEffect(() => {
+    if (autoRefreshEnabled) {
+      const interval = setInterval(() => {
+        fetchData();
+      }, 300000); // 5 minutes
+      setRefreshInterval(interval);
+      return () => clearInterval(interval);
+    } else {
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+        setRefreshInterval(null);
+      }
+    }
+  }, [autoRefreshEnabled]);
 
   const formatCurrency = (v) => `$${Number(v).toFixed(2)}`;
   const formatNumber = (v) => Number(v).toLocaleString();
@@ -241,7 +253,6 @@ function App() {
 
   const applyFilters = () => {
     fetchData();
-    toast.info('Filters applied');
   };
 
   const resetFilters = () => {
@@ -254,7 +265,6 @@ function App() {
       endDate: ''
     });
     fetchData();
-    toast.info('Filters reset');
   };
 
   // ===== EXPORT FUNCTIONS =====
@@ -276,7 +286,6 @@ function App() {
     link.href = URL.createObjectURL(blob);
     link.download = "billing_data.csv";
     link.click();
-    toast.success('CSV exported successfully!');
   };
 
   const exportPDF = () => {
@@ -291,19 +300,16 @@ function App() {
           const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
           pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
           pdf.save("dashboard.pdf");
-          toast.success('PDF exported successfully!');
         });
       });
     });
   };
 
-  if (loading) return <SkeletonLoader />;
+  if (loading) return <div className="loading">Loading dashboard...</div>;
   if (!summary) return <div className="error">Unable to load data.</div>;
 
   return (
     <div className="App" data-theme={isDark ? 'dark' : 'light'}>
-      <ToastContainer position="bottom-right" autoClose={3000} hideProgressBar={false} newestOnTop />
-      
       {/* ===== SIDEBAR ===== */}
       <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sidebar-header">
@@ -314,59 +320,30 @@ function App() {
         </div>
 
         <nav className="sidebar-nav">
-          <button
-            className={`nav-item ${currentPage === 'home' ? 'active' : ''}`}
-            onClick={() => setCurrentPage('home')}
-          >
-            <i className="fas fa-home nav-icon"></i>
-            {sidebarOpen && <span className="nav-label">Home</span>}
+          <button className={`nav-item ${currentPage === 'home' ? 'active' : ''}`} onClick={() => setCurrentPage('home')}>
+            <i className="fas fa-home nav-icon"></i>{sidebarOpen && <span className="nav-label">Home</span>}
           </button>
-          <button
-            className={`nav-item ${currentPage === 'dashboard' ? 'active' : ''}`}
-            onClick={() => setCurrentPage('dashboard')}
-          >
-            <i className="fas fa-chart-pie nav-icon"></i>
-            {sidebarOpen && <span className="nav-label">Dashboard</span>}
+          <button className={`nav-item ${currentPage === 'dashboard' ? 'active' : ''}`} onClick={() => setCurrentPage('dashboard')}>
+            <i className="fas fa-chart-pie nav-icon"></i>{sidebarOpen && <span className="nav-label">Dashboard</span>}
           </button>
-          <button
-            className={`nav-item ${currentPage === 'analytics' ? 'active' : ''}`}
-            onClick={() => setCurrentPage('analytics')}
-          >
-            <i className="fas fa-chart-line nav-icon"></i>
-            {sidebarOpen && <span className="nav-label">Analytics</span>}
+          <button className={`nav-item ${currentPage === 'analytics' ? 'active' : ''}`} onClick={() => setCurrentPage('analytics')}>
+            <i className="fas fa-chart-line nav-icon"></i>{sidebarOpen && <span className="nav-label">Analytics</span>}
           </button>
-          <button
-            className={`nav-item ${currentPage === 'reports' ? 'active' : ''}`}
-            onClick={() => setCurrentPage('reports')}
-          >
-            <i className="fas fa-file-alt nav-icon"></i>
-            {sidebarOpen && <span className="nav-label">Reports</span>}
+          <button className={`nav-item ${currentPage === 'reports' ? 'active' : ''}`} onClick={() => setCurrentPage('reports')}>
+            <i className="fas fa-file-alt nav-icon"></i>{sidebarOpen && <span className="nav-label">Reports</span>}
           </button>
-          <button
-            className={`nav-item ${currentPage === 'settings' ? 'active' : ''}`}
-            onClick={() => setCurrentPage('settings')}
-          >
-            <i className="fas fa-cog nav-icon"></i>
-            {sidebarOpen && <span className="nav-label">Settings</span>}
+          <button className={`nav-item ${currentPage === 'settings' ? 'active' : ''}`} onClick={() => setCurrentPage('settings')}>
+            <i className="fas fa-cog nav-icon"></i>{sidebarOpen && <span className="nav-label">Settings</span>}
           </button>
-          <button
-            className="nav-item"
-            onClick={toggleTheme}
-          >
+          <button className="nav-item" onClick={toggleTheme}>
             <i className={`fas ${isDark ? 'fa-sun' : 'fa-moon'} nav-icon`}></i>
             {sidebarOpen && <span className="nav-label">{isDark ? 'Light Mode' : 'Dark Mode'}</span>}
           </button>
         </nav>
 
         <div className="sidebar-footer">
-          <button className="nav-item">
-            <i className="fas fa-comment-dots nav-icon"></i>
-            {sidebarOpen && <span className="nav-label">Chat History</span>}
-          </button>
-          <button className="nav-item">
-            <i className="fas fa-user-circle nav-icon"></i>
-            {sidebarOpen && <span className="nav-label">Profile</span>}
-          </button>
+          <button className="nav-item"><i className="fas fa-comment-dots nav-icon"></i>{sidebarOpen && <span className="nav-label">Chat History</span>}</button>
+          <button className="nav-item"><i className="fas fa-user-circle nav-icon"></i>{sidebarOpen && <span className="nav-label">Profile</span>}</button>
         </div>
       </aside>
 
@@ -407,8 +384,23 @@ function App() {
                 <h2>Dashboard</h2>
                 <p className="page-subtitle">Unified cost intelligence across your AWS environment</p>
               </div>
-              <div className="last-updated">
-                <i className="fas fa-clock"></i> Last updated: {lastUpdated.toLocaleString()}
+              <div className="header-actions">
+                <div className="last-updated">
+                  <i className="fas fa-clock"></i> Last updated: {lastUpdated.toLocaleString()}
+                  <button className="refresh-btn" onClick={fetchData} title="Refresh data">
+                    <i className="fas fa-sync-alt"></i>
+                  </button>
+                </div>
+                <div className="auto-refresh-toggle">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={autoRefreshEnabled}
+                      onChange={(e) => setAutoRefreshEnabled(e.target.checked)}
+                    />
+                    Auto-refresh every 5 min
+                  </label>
+                </div>
               </div>
             </div>
 
@@ -469,7 +461,7 @@ function App() {
               <div className="kpi-card"><div className="kpi-label"><i className="fas fa-arrow-right-arrow-left"></i> Data Transfer</div><div className="kpi-value">12.3 TB</div><div className="kpi-trend">Last 30 days</div></div>
             </div>
 
-            {/* ===== BUDGET VS ACTUAL CHART ===== */}
+            {/* ===== BUDGET CHART ===== */}
             {budget && (
               <div className="budget-card">
                 <div className="budget-header">
