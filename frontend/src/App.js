@@ -225,12 +225,11 @@ function App() {
     fetchData();
   }, []);
 
-  // Auto-refresh every 5 minutes if enabled
   useEffect(() => {
     if (autoRefreshEnabled) {
       const interval = setInterval(() => {
         fetchData();
-      }, 300000); // 5 minutes
+      }, 300000);
       setRefreshInterval(interval);
       return () => clearInterval(interval);
     } else {
@@ -267,7 +266,6 @@ function App() {
     fetchData();
   };
 
-  // ===== EXPORT FUNCTIONS =====
   const exportCSV = () => {
     const headers = ["Date", "Service", "Account", "Category", "Amount"];
     const rows = transactions.map(tx => [
@@ -310,7 +308,6 @@ function App() {
 
   return (
     <div className="App" data-theme={isDark ? 'dark' : 'light'}>
-      {/* ===== SIDEBAR ===== */}
       <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sidebar-header">
           <span className="logo">FinOps</span>
@@ -318,7 +315,6 @@ function App() {
             <i className={`fas ${sidebarOpen ? 'fa-chevron-left' : 'fa-chevron-right'}`}></i>
           </button>
         </div>
-
         <nav className="sidebar-nav">
           <button className={`nav-item ${currentPage === 'home' ? 'active' : ''}`} onClick={() => setCurrentPage('home')}>
             <i className="fas fa-home nav-icon"></i>{sidebarOpen && <span className="nav-label">Home</span>}
@@ -340,17 +336,13 @@ function App() {
             {sidebarOpen && <span className="nav-label">{isDark ? 'Light Mode' : 'Dark Mode'}</span>}
           </button>
         </nav>
-
         <div className="sidebar-footer">
           <button className="nav-item"><i className="fas fa-comment-dots nav-icon"></i>{sidebarOpen && <span className="nav-label">Chat History</span>}</button>
           <button className="nav-item"><i className="fas fa-user-circle nav-icon"></i>{sidebarOpen && <span className="nav-label">Profile</span>}</button>
         </div>
       </aside>
 
-      {/* ===== MAIN CONTENT ===== */}
       <main className={`main-content ${sidebarOpen ? 'with-sidebar' : 'full-width'}`}>
-
-        {/* ===== HOME PAGE ===== */}
         {currentPage === 'home' && (
           <div className="page-content">
             <h2>Home</h2>
@@ -376,7 +368,6 @@ function App() {
           </div>
         )}
 
-        {/* ===== DASHBOARD PAGE ===== */}
         {currentPage === 'dashboard' && (
           <div id="dashboard-content" className="page-content">
             <div className="dashboard-header">
@@ -393,24 +384,18 @@ function App() {
                 </div>
                 <div className="auto-refresh-toggle">
                   <label>
-                    <input
-                      type="checkbox"
-                      checked={autoRefreshEnabled}
-                      onChange={(e) => setAutoRefreshEnabled(e.target.checked)}
-                    />
+                    <input type="checkbox" checked={autoRefreshEnabled} onChange={(e) => setAutoRefreshEnabled(e.target.checked)} />
                     Auto-refresh every 5 min
                   </label>
                 </div>
               </div>
             </div>
 
-            {/* ===== EXPORT BUTTONS ===== */}
             <div className="export-buttons">
               <button className="btn-export" onClick={exportCSV}><i className="fas fa-file-csv"></i> Export CSV</button>
               <button className="btn-export" onClick={exportPDF}><i className="fas fa-file-pdf"></i> Export PDF</button>
             </div>
 
-            {/* ===== FILTERS ===== */}
             <div className="filters">
               <div className="filter-group">
                 <label><i className="fas fa-users"></i> Account</label>
@@ -451,7 +436,6 @@ function App() {
               <button className="btn-secondary" onClick={resetFilters}><i className="fas fa-undo"></i> Reset</button>
             </div>
 
-            {/* ===== KPI CARDS ===== */}
             <div className="kpi-grid">
               <div className="kpi-card"><div className="kpi-label"><i className="fas fa-dollar-sign"></i> Total Cost</div><div className="kpi-value">{formatCurrency(summary.total_cost)}</div><div className="kpi-trend">Last 30 days</div></div>
               <div className="kpi-card"><div className="kpi-label"><i className="fas fa-calendar-day"></i> Daily Average</div><div className="kpi-value">{formatCurrency(summary.daily_avg || summary.total_cost / 30)}</div><div className="kpi-trend">Per day</div></div>
@@ -461,7 +445,6 @@ function App() {
               <div className="kpi-card"><div className="kpi-label"><i className="fas fa-arrow-right-arrow-left"></i> Data Transfer</div><div className="kpi-value">12.3 TB</div><div className="kpi-trend">Last 30 days</div></div>
             </div>
 
-            {/* ===== BUDGET CHART ===== */}
             {budget && (
               <div className="budget-card">
                 <div className="budget-header">
@@ -479,7 +462,6 @@ function App() {
               </div>
             )}
 
-            {/* ===== CHARTS ROW 1 ===== */}
             <div className="charts-grid">
               <div className="chart-card full-width">
                 <div className="chart-header"><h3><i className="fas fa-chart-simple"></i> Cost Trend ({filters.timeGrain})</h3><span className="chart-badge">{filters.timeGrain === 'hourly' ? 'Last 24 hours' : filters.timeGrain === 'daily' ? 'Last 30 days' : '12 months'}</span></div>
@@ -496,7 +478,6 @@ function App() {
               </div>
             </div>
 
-            {/* ===== CHARTS ROW 2 ===== */}
             <div className="charts-grid">
               <div className="chart-card"><div className="chart-header"><h3><i className="fas fa-server"></i> Cost by Service</h3><span className="chart-badge">breakdown</span></div>
                 <ResponsiveContainer width="100%" height={260}>
@@ -521,7 +502,6 @@ function App() {
               </div>
             </div>
 
-            {/* ===== CHARTS ROW 3 ===== */}
             <div className="charts-grid">
               <div className="chart-card"><div className="chart-header"><h3><i className="fas fa-globe"></i> Cost by Region</h3><span className="chart-badge">geographic</span></div>
                 <ResponsiveContainer width="100%" height={240}>
@@ -547,7 +527,6 @@ function App() {
               </div>
             </div>
 
-            {/* ===== DATA TRANSFER CHART ===== */}
             <div className="charts-grid">
               <div className="chart-card full-width"><div className="chart-header"><h3><i className="fas fa-arrow-right-arrow-left"></i> Data Transfer (In / Out / VPC)</h3><span className="chart-badge">network</span></div>
                 <ResponsiveContainer width="100%" height={260}>
@@ -565,7 +544,6 @@ function App() {
               </div>
             </div>
 
-            {/* ===== BOTTOM GRID ===== */}
             <div className="bottom-grid">
               <div className="chart-card"><div className="chart-header"><h3><i className="fas fa-project-diagram"></i> Top Projects</h3><span className="chart-badge">by cost</span></div>
                 <ResponsiveContainer width="100%" height={220}>
@@ -590,7 +568,6 @@ function App() {
               </div>
             </div>
 
-            {/* ===== SAVINGS PLANS PANEL ===== */}
             <div className="savings-plans-panel">
               <div className="savings-plans-header"><h3><i className="fas fa-piggy-bank"></i> Savings Plans & Reserved Instances</h3><span className="chart-badge">optimization</span></div>
               <div className="savings-plans-grid">
@@ -603,7 +580,6 @@ function App() {
               </div>
             </div>
 
-            {/* ===== TRANSACTION TABLE ===== */}
             <div className="chart-card full-width" style={{ marginTop: '16px' }}>
               <div className="chart-header"><h3><i className="fas fa-list-ul"></i> Recent Transactions</h3><span className="chart-badge">last 10</span></div>
               <div className="table-container">
@@ -626,7 +602,6 @@ function App() {
           </div>
         )}
 
-        {/* ===== OTHER PAGES ===== */}
         {currentPage === 'analytics' && (
           <div className="page-content"><h2>Analytics</h2><p className="page-subtitle">Advanced cost analytics and forecasting modules will be available here.</p></div>
         )}
