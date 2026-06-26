@@ -6,134 +6,144 @@ import {
 import './App.css';
 
 // ═══════════════════════════════════════════════════════════════
-// MOCK DATA
+// MOCK DATA — 3 ACCOUNTS
 // ═══════════════════════════════════════════════════════════════
-const MOCK_DATA = {
-  summary: {
-    total_cost: 268400.75,
-    daily_avg: 8946.69,
-    forecast: 285000.00,
-    mom_change: 12.5,
-    accounts: [
-      { account: "prod-main-account", total_cost: 134200.38 },
-      { account: "prod-secondary",    total_cost: 80520.23  },
-      { account: "staging-account",   total_cost: 53680.14  }
-    ]
-  },
-  service_breakdown: [
-    { service: "Amazon EC2",        total_cost: 89420.50 },
-    { service: "Amazon RDS",        total_cost: 54180.25 },
-    { service: "Amazon S3",         total_cost: 38940.80 },
-    { service: "CloudFront",        total_cost: 29310.20 },
-    { service: "AWS Lambda",        total_cost: 21600.15 },
-    { service: "Amazon EKS",        total_cost: 18720.45 },
-    { service: "ElastiCache",       total_cost: 12450.30 },
-    { service: "Others",            total_cost: 3778.10  }
-  ],
-  category_breakdown: [
-    { category: "Compute",    total_cost: 89420, color: "#2563EB" },
-    { category: "Database",   total_cost: 54180, color: "#8B5CF6" },
-    { category: "Storage",    total_cost: 38940, color: "#06B6D4" },
-    { category: "Networking", total_cost: 29310, color: "#10B981" },
-    { category: "Analytics",  total_cost: 21600, color: "#F59E0B" },
-    { category: "Other",      total_cost: 34950, color: "#64748B" }
-  ],
-  region_breakdown: [
-    { region: "us-east-1",      total_cost: 112400 },
-    { region: "us-west-2",      total_cost: 78300  },
-    { region: "eu-west-1",      total_cost: 49200  },
-    { region: "ap-south-1",     total_cost: 21100  },
-    { region: "ap-southeast-1", total_cost: 7400   }
-  ],
-  instance_breakdown: [
-    { instance: "t3.medium",  total_cost: 4528.50 },
-    { instance: "t3.large",   total_cost: 3840.75 },
-    { instance: "m5.large",   total_cost: 3250.20 },
-    { instance: "c5.xlarge",  total_cost: 2680.80 },
-    { instance: "r5.large",   total_cost: 1940.35 }
-  ],
-  data_transfer: [
-    { month: "Jul", in: 1800, out: 3200, vpc: 1200 },
-    { month: "Aug", in: 2100, out: 3800, vpc: 1400 },
-    { month: "Sep", in: 1950, out: 3500, vpc: 1300 },
-    { month: "Oct", in: 2300, out: 4200, vpc: 1600 },
-    { month: "Nov", in: 2500, out: 4500, vpc: 1800 },
-    { month: "Dec", in: 2800, out: 5000, vpc: 2000 },
-    { month: "Jan", in: 3100, out: 5500, vpc: 2200 },
-    { month: "Feb", in: 2900, out: 5200, vpc: 2100 },
-    { month: "Mar", in: 3400, out: 6000, vpc: 2500 },
-    { month: "Apr", in: 3600, out: 6500, vpc: 2800 },
-    { month: "May", in: 4000, out: 7200, vpc: 3100 },
-    { month: "Jun", in: 4500, out: 8000, vpc: 3500 }
-  ],
-  savings_plans: {
-    coverage: 68.5,
-    utilization: 72.3,
-    monthly_savings: 34200,
-    total_savings: 208400,
-    commitment: 42000,
-    actual: 31680
-  },
-  monthly_trend: [
-    { month: "Jul '25", total_cost: 142300, forecast: 145000 },
-    { month: "Aug '25", total_cost: 158700, forecast: 160000 },
-    { month: "Sep '25", total_cost: 134200, forecast: 136000 },
-    { month: "Oct '25", total_cost: 171500, forecast: 170000 },
-    { month: "Nov '25", total_cost: 189200, forecast: 192000 },
-    { month: "Dec '25", total_cost: 203400, forecast: 205000 },
-    { month: "Jan '26", total_cost: 196800, forecast: 198000 },
-    { month: "Feb '26", total_cost: 221300, forecast: 222000 },
-    { month: "Mar '26", total_cost: 238900, forecast: 240000 },
-    { month: "Apr '26", total_cost: 215600, forecast: 217000 },
-    { month: "May '26", total_cost: 247100, forecast: 250000 },
-    { month: "Jun '26", total_cost: 268400, forecast: 285000 }
-  ],
-  hourly_trend: Array.from({ length: 24 }, (_, i) => ({
-    hour: `${String(i).padStart(2,'0')}:00`,
-    cost: i < 6 ? 120 + Math.sin(i)*80 : i < 12 ? 320 + Math.sin(i)*200 : i < 18 ? 480 + Math.sin(i)*180 : 260 + Math.sin(i)*140
-  })),
-  daily_trend: Array.from({ length: 30 }, (_, i) => ({
-    day: `Jun ${i+1}`,
-    total_cost: 6000 + Math.sin(i*0.4)*2000 + (i%3)*500,
-    forecast:   6200 + Math.sin(i*0.4)*2100 + (i%3)*480
-  })),
-  top_projects: [
-    { project: "E-Commerce Platform", total_cost: 84200.25 },
-    { project: "Data Analytics Hub",  total_cost: 56340.50 },
-    { project: "Mobile Backend",      total_cost: 42180.30 },
-    { project: "ML Pipeline",         total_cost: 31720.45 },
-    { project: "DevOps Infra",        total_cost: 21960.25 }
-  ],
-  environment_breakdown: [
-    { environment: "Production",  total_cost: 178400, color: "#2563EB" },
-    { environment: "Staging",     total_cost: 56200,  color: "#8B5CF6" },
-    { environment: "Development", total_cost: 22400,  color: "#06B6D4" },
-    { environment: "QA",          total_cost: 11400,  color: "#10B981" }
-  ],
-  anomalies: [
-    { service: "EC2",    region: "us-east-1",  spike: "+247%", cost: "$12,400", time: "2h ago",  severity: "critical" },
-    { service: "RDS",    region: "eu-west-1",  spike: "+89%",  cost: "$4,210",  time: "6h ago",  severity: "high"     },
-    { service: "Lambda", region: "us-west-2",  spike: "+134%", cost: "$2,890",  time: "1d ago",  severity: "medium"   }
-  ],
-  transactions: [
-    { id: 1,  date: "2026-06-25", service: "Amazon EC2",    account: "prod-main-account", amount: 2341.50, category: "Compute"    },
-    { id: 2,  date: "2026-06-25", service: "Amazon RDS",    account: "prod-main-account", amount: 1876.20, category: "Database"   },
-    { id: 3,  date: "2026-06-24", service: "Amazon S3",     account: "prod-secondary",    amount: 432.80,  category: "Storage"    },
-    { id: 4,  date: "2026-06-24", service: "CloudFront",    account: "prod-main-account", amount: 891.40,  category: "Networking" },
-    { id: 5,  date: "2026-06-23", service: "AWS Lambda",    account: "staging-account",   amount: 234.10,  category: "Compute"    },
-    { id: 6,  date: "2026-06-23", service: "AWS Glue",      account: "prod-secondary",    amount: 567.50,  category: "Analytics"  },
-    { id: 7,  date: "2026-06-22", service: "Amazon EC2",    account: "prod-main-account", amount: 3201.15, category: "Compute"    },
-    { id: 8,  date: "2026-06-22", service: "Amazon S3",     account: "prod-main-account", amount: 928.80,  category: "Storage"    },
-    { id: 9,  date: "2026-06-22", service: "Amazon Redshift", account: "prod-secondary",  amount: 2154.40, category: "Database"   },
-    { id: 10, date: "2026-06-21", service: "AWS Lambda",    account: "prod-main-account", amount: 387.75,  category: "Compute"    }
-  ],
-  budget: {
-    total_budget: 300000,
-    spent: 268400,
-    remaining: 31600,
-    percent_used: 89.47
-  }
+const ACCOUNTS = [
+  { id: "prod-main", label: "Production Main", total_cost: 134200.38 },
+  { id: "prod-secondary", label: "Production Secondary", total_cost: 80520.23 },
+  { id: "staging", label: "Staging", total_cost: 53680.14 }
+];
+
+const SERVICE_DATA = [
+  { service: "Amazon EC2", prod_main: 44710.25, prod_sec: 26826.15, staging: 17884.10 },
+  { service: "Amazon RDS", prod_main: 27090.13, prod_sec: 16254.08, staging: 10836.05 },
+  { service: "Amazon S3", prod_main: 19470.40, prod_sec: 11682.24, staging: 7788.16 },
+  { service: "CloudFront", prod_main: 14655.10, prod_sec: 8793.06, staging: 5862.04 },
+  { service: "AWS Lambda", prod_main: 10800.08, prod_sec: 6480.05, staging: 4320.03 },
+  { service: "Amazon EKS", prod_main: 9360.23, prod_sec: 5616.14, staging: 3744.09 },
+  { service: "ElastiCache", prod_main: 6225.15, prod_sec: 3735.09, staging: 2490.06 },
+  { service: "Others", prod_main: 1889.05, prod_sec: 1133.43, staging: 755.62 }
+];
+
+const CATEGORY_DATA = [
+  { category: "Compute", prod_main: 44710, prod_sec: 26826, staging: 17884 },
+  { category: "Database", prod_main: 27090, prod_sec: 16254, staging: 10836 },
+  { category: "Storage", prod_main: 19470, prod_sec: 11682, staging: 7788 },
+  { category: "Networking", prod_main: 14655, prod_sec: 8793, staging: 5862 },
+  { category: "Analytics", prod_main: 10800, prod_sec: 6480, staging: 4320 },
+  { category: "Other", prod_main: 17475, prod_sec: 10485, staging: 6990 }
+];
+
+const REGION_DATA = [
+  { region: "us-east-1", prod_main: 56200, prod_sec: 33720, staging: 22480 },
+  { region: "us-west-2", prod_main: 39150, prod_sec: 23490, staging: 15660 },
+  { region: "eu-west-1", prod_main: 24600, prod_sec: 14760, staging: 9840 },
+  { region: "ap-south-1", prod_main: 10550, prod_sec: 6330, staging: 4220 },
+  { region: "ap-southeast-1", prod_main: 3700, prod_sec: 2220, staging: 1480 }
+];
+
+const INSTANCE_DATA = [
+  { instance: "t3.medium", prod_main: 2264.25, prod_sec: 1358.55, staging: 905.70 },
+  { instance: "t3.large", prod_main: 1920.38, prod_sec: 1152.23, staging: 768.15 },
+  { instance: "m5.large", prod_main: 1625.10, prod_sec: 975.06, staging: 650.04 },
+  { instance: "c5.xlarge", prod_main: 1340.40, prod_sec: 804.24, staging: 536.16 },
+  { instance: "r5.large", prod_main: 970.18, prod_sec: 582.11, staging: 388.07 }
+];
+
+const ENV_DATA = [
+  { environment: "Production", prod_main: 89200, prod_sec: 53520, staging: 35680 },
+  { environment: "Staging", prod_main: 28100, prod_sec: 16860, staging: 11240 },
+  { environment: "Development", prod_main: 11200, prod_sec: 6720, staging: 4480 },
+  { environment: "QA", prod_main: 5700, prod_sec: 3420, staging: 2280 }
+];
+
+const PROJECT_DATA = [
+  { project: "E-Commerce Platform", prod_main: 42100.13, prod_sec: 25260.08, staging: 16840.05 },
+  { project: "Data Analytics Hub", prod_main: 28170.25, prod_sec: 16902.15, staging: 11268.10 },
+  { project: "Mobile Backend", prod_main: 21090.15, prod_sec: 12654.09, staging: 8436.06 },
+  { project: "ML Pipeline", prod_main: 15860.23, prod_sec: 9516.14, staging: 6344.09 },
+  { project: "DevOps Infra", prod_main: 10980.13, prod_sec: 6588.08, staging: 4392.05 }
+];
+
+// Monthly trend per account
+const MONTHLY_TREND = [
+  { month: "Jul '25", prod_main: 71150, prod_sec: 42690, staging: 28460 },
+  { month: "Aug '25", prod_main: 79350, prod_sec: 47610, staging: 31740 },
+  { month: "Sep '25", prod_main: 67100, prod_sec: 40260, staging: 26840 },
+  { month: "Oct '25", prod_main: 85750, prod_sec: 51450, staging: 34300 },
+  { month: "Nov '25", prod_main: 94600, prod_sec: 56760, staging: 37840 },
+  { month: "Dec '25", prod_main: 101700, prod_sec: 61020, staging: 40680 },
+  { month: "Jan '26", prod_main: 98400, prod_sec: 59040, staging: 39360 },
+  { month: "Feb '26", prod_main: 110650, prod_sec: 66390, staging: 44260 },
+  { month: "Mar '26", prod_main: 119450, prod_sec: 71670, staging: 47780 },
+  { month: "Apr '26", prod_main: 107800, prod_sec: 64680, staging: 43120 },
+  { month: "May '26", prod_main: 123550, prod_sec: 74130, staging: 49420 },
+  { month: "Jun '26", prod_main: 134200, prod_sec: 80520, staging: 53680 }
+];
+
+const HOURLY_TREND = Array.from({ length: 24 }, (_, i) => ({
+  hour: `${String(i).padStart(2,'0')}:00`,
+  prod_main: i < 6 ? 60 + Math.sin(i)*40 : i < 12 ? 160 + Math.sin(i)*100 : i < 18 ? 240 + Math.sin(i)*90 : 130 + Math.sin(i)*70,
+  prod_sec: i < 6 ? 36 + Math.sin(i)*24 : i < 12 ? 96 + Math.sin(i)*60 : i < 18 ? 144 + Math.sin(i)*54 : 78 + Math.sin(i)*42,
+  staging: i < 6 ? 24 + Math.sin(i)*16 : i < 12 ? 64 + Math.sin(i)*40 : i < 18 ? 96 + Math.sin(i)*36 : 52 + Math.sin(i)*28
+}));
+
+const DAILY_TREND = Array.from({ length: 30 }, (_, i) => ({
+  day: `Jun ${i+1}`,
+  prod_main: 3000 + Math.sin(i*0.4)*1000 + (i%3)*250,
+  prod_sec: 1800 + Math.sin(i*0.4)*600 + (i%3)*150,
+  staging: 1200 + Math.sin(i*0.4)*400 + (i%3)*100
+}));
+
+const DATA_TRANSFER = [
+  { month: "Jul", prod_main: 900, prod_sec: 540, staging: 360 },
+  { month: "Aug", prod_main: 1050, prod_sec: 630, staging: 420 },
+  { month: "Sep", prod_main: 975, prod_sec: 585, staging: 390 },
+  { month: "Oct", prod_main: 1150, prod_sec: 690, staging: 460 },
+  { month: "Nov", prod_main: 1250, prod_sec: 750, staging: 500 },
+  { month: "Dec", prod_main: 1400, prod_sec: 840, staging: 560 },
+  { month: "Jan", prod_main: 1550, prod_sec: 930, staging: 620 },
+  { month: "Feb", prod_main: 1450, prod_sec: 870, staging: 580 },
+  { month: "Mar", prod_main: 1700, prod_sec: 1020, staging: 680 },
+  { month: "Apr", prod_main: 1800, prod_sec: 1080, staging: 720 },
+  { month: "May", prod_main: 2000, prod_sec: 1200, staging: 800 },
+  { month: "Jun", prod_main: 2250, prod_sec: 1350, staging: 900 }
+];
+
+const SAVINGS_PLANS = {
+  coverage: 68.5,
+  utilization: 72.3,
+  monthly_savings: 34200,
+  total_savings: 208400,
+  commitment: 42000,
+  actual: 31680
 };
+
+const TRANSACTIONS = [
+  { id: 1, date: "2026-06-25", service: "Amazon EC2", account: "prod-main", amount: 2341.50, category: "Compute" },
+  { id: 2, date: "2026-06-25", service: "Amazon RDS", account: "prod-main", amount: 1876.20, category: "Database" },
+  { id: 3, date: "2026-06-24", service: "Amazon S3", account: "prod-secondary", amount: 432.80, category: "Storage" },
+  { id: 4, date: "2026-06-24", service: "CloudFront", account: "prod-main", amount: 891.40, category: "Networking" },
+  { id: 5, date: "2026-06-23", service: "AWS Lambda", account: "staging", amount: 234.10, category: "Compute" },
+  { id: 6, date: "2026-06-23", service: "AWS Glue", account: "prod-secondary", amount: 567.50, category: "Analytics" },
+  { id: 7, date: "2026-06-22", service: "Amazon EC2", account: "prod-main", amount: 3201.15, category: "Compute" },
+  { id: 8, date: "2026-06-22", service: "Amazon S3", account: "prod-main", amount: 928.80, category: "Storage" },
+  { id: 9, date: "2026-06-22", service: "Amazon Redshift", account: "prod-secondary", amount: 2154.40, category: "Database" },
+  { id: 10, date: "2026-06-21", service: "AWS Lambda", account: "prod-main", amount: 387.75, category: "Compute" }
+];
+
+const BUDGET = {
+  total_budget: 300000,
+  spent: 268400,
+  remaining: 31600,
+  percent_used: 89.47
+};
+
+const ANOMALIES = [
+  { service: "EC2", region: "us-east-1", spike: "+247%", cost: "$12,400", time: "2h ago", severity: "critical" },
+  { service: "RDS", region: "eu-west-1", spike: "+89%", cost: "$4,210", time: "6h ago", severity: "high" },
+  { service: "Lambda", region: "us-west-2", spike: "+134%", cost: "$2,890", time: "1d ago", severity: "medium" }
+];
 
 const CATEGORY_COLORS = {
   Compute: "#2563EB", Database: "#8B5CF6", Storage: "#06B6D4",
@@ -143,20 +153,36 @@ const CATEGORY_COLORS = {
 const PIE_COLORS = ["#2563EB","#8B5CF6","#06B6D4","#10B981","#F59E0B","#EF4444","#EC4899","#64748B"];
 
 const NAV_ITEMS = [
-  { id: "overview",   label: "Overview",          icon: "◈" },
-  { id: "explorer",   label: "Cost Explorer",      icon: "◎" },
-  { id: "anomalies",  label: "Anomaly Detection",  icon: "◬", badge: 3 },
-  { id: "budgets",    label: "Budget Tracker",     icon: "◉" },
-  { id: "savings",    label: "Savings Plans",      icon: "◌" },
-  { id: "reports",    label: "Reports",            icon: "▤" },
-  { id: "settings",   label: "Settings",           icon: "⚙" }
+  { id: "overview", label: "Overview", icon: "◈" },
+  { id: "explorer", label: "Cost Explorer", icon: "◎" },
+  { id: "anomalies", label: "Anomaly Detection", icon: "◬", badge: 3 },
+  { id: "budgets", label: "Budget Tracker", icon: "◉" },
+  { id: "savings", label: "Savings Plans", icon: "◌" },
+  { id: "reports", label: "Reports", icon: "▤" },
+  { id: "settings", label: "Settings", icon: "⚙" }
 ];
 
 // ═══════════════════════════════════════════════════════════════
 // UTILS
 // ═══════════════════════════════════════════════════════════════
-const fmtK   = n => n >= 1e6 ? `$${(n/1e6).toFixed(2)}M` : n >= 1000 ? `$${(n/1000).toFixed(1)}K` : `$${Number(n).toFixed(0)}`;
+const fmtK = n => n >= 1e6 ? `$${(n/1e6).toFixed(2)}M` : n >= 1000 ? `$${(n/1000).toFixed(1)}K` : `$${Number(n).toFixed(0)}`;
 const fmtFull = n => `$${Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+
+// Get data for selected account
+const getAccountData = (data, account) => {
+  if (account === 'all') {
+    return data.map(d => ({
+      ...d,
+      total_cost: (d.prod_main || 0) + (d.prod_sec || 0) + (d.staging || 0)
+    }));
+  }
+  const keyMap = { 'prod-main': 'prod_main', 'prod-secondary': 'prod_sec', 'staging': 'staging' };
+  const key = keyMap[account] || 'prod_main';
+  return data.map(d => ({
+    ...d,
+    total_cost: d[key] || 0
+  }));
+};
 
 // ═══════════════════════════════════════════════════════════════
 // CUSTOM RECHARTS TOOLTIP
@@ -319,21 +345,21 @@ function BudgetRow({ name, budget, actual, forecast }) {
 // MAIN APP
 // ═══════════════════════════════════════════════════════════════
 export default function App() {
-  const [loaded,       setLoaded]       = useState(false);
-  const [sidebarOpen,  setSidebarOpen]  = useState(true);
-  const [activeNav,    setActiveNav]    = useState('overview');
-  const [isDark,       setIsDark]       = useState(true);
-  const [timeGrain,    setTimeGrain]    = useState('monthly');
-  const [filterAcct,   setFilterAcct]   = useState('all');
-  const [filterSvc,    setFilterSvc]    = useState('all');
+  const [loaded, setLoaded] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeNav, setActiveNav] = useState('overview');
+  const [isDark, setIsDark] = useState(true);
+  const [timeGrain, setTimeGrain] = useState('monthly');
+  const [selectedAccount, setSelectedAccount] = useState('all');
+  const [filterSvc, setFilterSvc] = useState('all');
   const [filterRegion, setFilterRegion] = useState('all');
-  const [startDate,    setStartDate]    = useState('');
-  const [endDate,      setEndDate]      = useState('');
-  const [aiOpen,       setAiOpen]       = useState(false);
-  const [aiInput,      setAiInput]      = useState('');
-  const [aiMessages,   setAiMessages]   = useState([{ role:'assistant', text:"Hi! I'm LensGPT. Ask me anything about your AWS costs." }]);
-  const [lastUpdated,  setLastUpdated]  = useState(new Date());
-  const [autoRefresh,  setAutoRefresh]  = useState(false);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiInput, setAiInput] = useState('');
+  const [aiMessages, setAiMessages] = useState([{ role:'assistant', text:"Hi! I'm GenAI. Ask me anything about your cloud costs." }]);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [autoRefresh, setAutoRefresh] = useState(false);
   const [filterSvcExplorer, setFilterSvcExplorer] = useState('All');
 
   useEffect(() => { setTimeout(() => setLoaded(true), 80); }, []);
@@ -346,26 +372,101 @@ export default function App() {
     return () => clearInterval(iv);
   }, [autoRefresh]);
 
-  const { summary, service_breakdown, category_breakdown, region_breakdown,
-          instance_breakdown, data_transfer, savings_plans, monthly_trend,
-          hourly_trend, daily_trend, top_projects, environment_breakdown,
-          anomalies, transactions, budget } = MOCK_DATA;
+  // ── Filtered data based on selected account ──
+  const accountData = (data) => {
+    if (selectedAccount === 'all') {
+      return data.map(d => ({ ...d, total_cost: (d.prod_main || 0) + (d.prod_sec || 0) + (d.staging || 0) }));
+    }
+    const keyMap = { 'prod-main': 'prod_main', 'prod-secondary': 'prod_sec', 'staging': 'staging' };
+    const key = keyMap[selectedAccount] || 'prod_main';
+    return data.map(d => ({ ...d, total_cost: d[key] || 0 }));
+  };
 
-  const trendData = timeGrain === 'hourly' ? hourly_trend
-                  : timeGrain === 'daily'   ? daily_trend
-                  : monthly_trend;
-  const trendKey  = timeGrain === 'hourly' ? 'hour'
-                  : timeGrain === 'daily'   ? 'day'
+  // ── Filtered service data ──
+  const filteredServices = () => {
+    let data = accountData(SERVICE_DATA);
+    if (filterSvc !== 'all') {
+      data = data.filter(d => d.service === filterSvc);
+    }
+    return data;
+  };
+
+  // ── Filtered region data ──
+  const filteredRegions = () => {
+    let data = accountData(REGION_DATA);
+    if (filterRegion !== 'all') {
+      data = data.filter(d => d.region === filterRegion);
+    }
+    return data;
+  };
+
+  // ── Filtered transactions ──
+  const filteredTransactions = () => {
+    let data = TRANSACTIONS;
+    if (selectedAccount !== 'all') {
+      data = data.filter(t => t.account === selectedAccount);
+    }
+    if (filterSvc !== 'all') {
+      data = data.filter(t => t.service === filterSvc);
+    }
+    return data;
+  };
+
+  // ── Filtered monthly trend ──
+  const filteredMonthlyTrend = () => {
+    if (selectedAccount === 'all') {
+      return MONTHLY_TREND.map(d => ({ month: d.month, total_cost: d.prod_main + d.prod_sec + d.staging }));
+    }
+    const keyMap = { 'prod-main': 'prod_main', 'prod-secondary': 'prod_sec', 'staging': 'staging' };
+    const key = keyMap[selectedAccount] || 'prod_main';
+    return MONTHLY_TREND.map(d => ({ month: d.month, total_cost: d[key] }));
+  };
+
+  // ── Filtered hourly trend ──
+  const filteredHourlyTrend = () => {
+    if (selectedAccount === 'all') {
+      return HOURLY_TREND.map(d => ({ hour: d.hour, cost: d.prod_main + d.prod_sec + d.staging }));
+    }
+    const keyMap = { 'prod-main': 'prod_main', 'prod-secondary': 'prod_sec', 'staging': 'staging' };
+    const key = keyMap[selectedAccount] || 'prod_main';
+    return HOURLY_TREND.map(d => ({ hour: d.hour, cost: d[key] }));
+  };
+
+  // ── Filtered daily trend ──
+  const filteredDailyTrend = () => {
+    if (selectedAccount === 'all') {
+      return DAILY_TREND.map(d => ({ day: d.day, total_cost: d.prod_main + d.prod_sec + d.staging }));
+    }
+    const keyMap = { 'prod-main': 'prod_main', 'prod-secondary': 'prod_sec', 'staging': 'staging' };
+    const key = keyMap[selectedAccount] || 'prod_main';
+    return DAILY_TREND.map(d => ({ day: d.day, total_cost: d[key] }));
+  };
+
+  // ── Filtered data transfer ──
+  const filteredDataTransfer = () => {
+    if (selectedAccount === 'all') {
+      return DATA_TRANSFER.map(d => ({ month: d.month, in: d.prod_main + d.prod_sec + d.staging }));
+    }
+    const keyMap = { 'prod-main': 'prod_main', 'prod-secondary': 'prod_sec', 'staging': 'staging' };
+    const key = keyMap[selectedAccount] || 'prod_main';
+    return DATA_TRANSFER.map(d => ({ month: d.month, in: d[key] }));
+  };
+
+  const trendData = timeGrain === 'hourly' ? filteredHourlyTrend()
+                  : timeGrain === 'daily' ? filteredDailyTrend()
+                  : filteredMonthlyTrend();
+  const trendKey = timeGrain === 'hourly' ? 'hour'
+                  : timeGrain === 'daily' ? 'day'
                   : 'month';
-  const costKey   = timeGrain === 'hourly' ? 'cost' : 'total_cost';
+  const costKey = timeGrain === 'hourly' ? 'cost' : 'total_cost';
 
   const exportCSV = () => {
     const h = ["Date","Service","Account","Category","Amount"];
-    const rows = transactions.map(t => [t.date, t.service, t.account, t.category, t.amount]);
+    const rows = filteredTransactions().map(t => [t.date, t.service, t.account, t.category, t.amount]);
     const csv = [h.join(','), ...rows.map(r => r.join(','))].join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-    a.download = 'cloudkeeper_export.csv'; a.click();
+    a.download = 'genmanage_export.csv'; a.click();
   };
 
   const sendAI = () => {
@@ -373,10 +474,10 @@ export default function App() {
     const q = aiInput; setAiInput('');
     setAiMessages(m => [...m, { role:'user', text:q }]);
     const replies = [
-      "Your EC2 spend increased 23% MoM, driven by new r6i instances in us-east-1.",
+      "Your EC2 spend increased 23% MoM, driven by new instances in us-east-1.",
       "Based on usage, rightsizing 12 idle instances could save ~$14,200/month.",
-      "S3 costs are trending +8% weekly — enabling Intelligent Tiering may help.",
-      "Top cost driver: Compute at 33.3% of total spend ($89.4K this month)."
+      "Data transfer costs are trending +8% weekly — enabling optimization may help.",
+      "Top cost driver: Compute at 33.3% of total spend."
     ];
     setTimeout(() => {
       setAiMessages(m => [...m, { role:'assistant', text: replies[Math.floor(Math.random()*replies.length)] }]);
@@ -384,8 +485,9 @@ export default function App() {
   };
 
   const svcExplorerCategories = ['All','Compute','Database','Storage','Networking','Analytics'];
-  const maxSvc = Math.max(...service_breakdown.map(s => s.total_cost));
-  const maxReg = Math.max(...region_breakdown.map(r => r.total_cost));
+  const totalSpent = ACCOUNTS.reduce((sum, a) => sum + a.total_cost, 0);
+  const dailyAvg = totalSpent / 30;
+  const forecast = totalSpent * 1.08;
 
   return (
     <div className={`lens-app ${loaded ? 'lens-loaded' : ''} ${isDark ? 'lens-dark' : 'lens-light'} ${sidebarOpen ? 'sidebar-is-open' : ''}`}>
@@ -401,7 +503,7 @@ export default function App() {
           <div className="sb-logo-mark">◈</div>
           {sidebarOpen && (
             <div className="sb-logo-text">
-              <span className="sb-logo-name">CloudKeeper</span>
+              <span className="sb-logo-name">GenManage</span>
               <span className="sb-logo-sub">Lens Analytics</span>
             </div>
           )}
@@ -463,7 +565,7 @@ export default function App() {
               </label>
             </div>
             <button className="topbar-ai-btn" onClick={() => setAiOpen(true)}>
-              <span className="ai-shimmer"/>✦ LensGPT
+              <span className="ai-shimmer"/>✦ GenAI
             </button>
             <div className="topbar-avatar">PK</div>
           </div>
@@ -475,12 +577,49 @@ export default function App() {
           {/* ══════════ OVERVIEW ══════════ */}
           {activeNav === 'overview' && (
             <>
+              {/* Account selector filter */}
+              <div className="filter-bar-card">
+                <div className="filter-bar-inner">
+                  <div className="filter-group">
+                    <label>Account</label>
+                    <select value={selectedAccount} onChange={e => setSelectedAccount(e.target.value)} className="lens-select">
+                      <option value="all">All Accounts</option>
+                      {ACCOUNTS.map((a,i) => <option key={i} value={a.id}>{a.label}</option>)}
+                    </select>
+                  </div>
+                  <div className="filter-group">
+                    <label>Service</label>
+                    <select value={filterSvc} onChange={e => setFilterSvc(e.target.value)} className="lens-select">
+                      <option value="all">All Services</option>
+                      {SERVICE_DATA.map((s,i) => <option key={i} value={s.service}>{s.service}</option>)}
+                    </select>
+                  </div>
+                  <div className="filter-group">
+                    <label>Region</label>
+                    <select value={filterRegion} onChange={e => setFilterRegion(e.target.value)} className="lens-select">
+                      <option value="all">All Regions</option>
+                      {REGION_DATA.map((r,i) => <option key={i} value={r.region}>{r.region}</option>)}
+                    </select>
+                  </div>
+                  <div className="filter-group">
+                    <label>From</label>
+                    <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="lens-select"/>
+                  </div>
+                  <div className="filter-group">
+                    <label>To</label>
+                    <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="lens-select"/>
+                  </div>
+                  <button className="filter-apply-btn">Apply</button>
+                  <button className="filter-reset-btn" onClick={() => {setSelectedAccount('all');setFilterSvc('all');setFilterRegion('all');setStartDate('');setEndDate('');}}>Reset</button>
+                </div>
+              </div>
+
               {/* KPI Grid */}
               <div className="kpi-grid-4">
-                <KPICard label="Total Cost"     value={fmtK(summary.total_cost)} sub="Jun 2026"         trend={summary.mom_change} color="#2563EB" delay={0}   sparkData={monthly_trend.map(d=>d.total_cost)} />
-                <KPICard label="Daily Average"  value={fmtK(summary.daily_avg)}  sub="Last 30 days"     trend={-3.2}               color="#06B6D4" delay={80}  sparkData={daily_trend.slice(-12).map(d=>d.total_cost)} />
-                <KPICard label="Month Forecast" value={fmtK(summary.forecast)}   sub="Projected EOM"    trend={6.1}                color="#8B5CF6" delay={160} sparkData={monthly_trend.map(d=>d.forecast)} />
-                <KPICard label="Savings Plans"  value={fmtK(savings_plans.monthly_savings)} sub="Saved this month" trend={18.7}   color="#10B981" delay={240} sparkData={[18000,22000,26000,29000,31000,34200]} />
+                <KPICard label="Total Cost" value={fmtK(totalSpent)} sub="All Accounts" trend={12.5} color="#2563EB" delay={0} sparkData={MONTHLY_TREND.map(d => d.prod_main + d.prod_sec + d.staging)} />
+                <KPICard label="Daily Average" value={fmtK(dailyAvg)} sub="Last 30 days" trend={-3.2} color="#06B6D4" delay={80} sparkData={DAILY_TREND.map(d => d.prod_main + d.prod_sec + d.staging)} />
+                <KPICard label="Month Forecast" value={fmtK(forecast)} sub="Projected EOM" trend={6.1} color="#8B5CF6" delay={160} sparkData={MONTHLY_TREND.map(d => d.prod_main + d.prod_sec + d.staging)} />
+                <KPICard label="Savings Plans" value={fmtK(SAVINGS_PLANS.monthly_savings)} sub="Saved this month" trend={18.7} color="#10B981" delay={240} sparkData={[18000,22000,26000,29000,31000,34200]} />
               </div>
 
               {/* Cost Trend */}
@@ -506,22 +645,19 @@ export default function App() {
                     <YAxis tick={{fontSize:10,fill:'#475569'}} axisLine={false} tickLine={false} tickFormatter={v => fmtK(v)}/>
                     <Tooltip content={<DarkTooltip/>}/>
                     <Area type="monotone" dataKey={costKey} name="Actual" stroke="#2563EB" fill="url(#trendGrad)" strokeWidth={2}/>
-                    {timeGrain !== 'hourly' && (
-                      <Line type="monotone" dataKey="forecast" name="Forecast" stroke="#8B5CF6" strokeWidth={1.5} strokeDasharray="5 3" dot={false}/>
-                    )}
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
 
-              {/* 2-col: Services + Regions */}
+              {/* 2-col: Services + Regions (filtered) */}
               <div className="grid-2col">
                 <div className="lens-card">
-                  <SectionHeader title="Service Breakdown" badge={`${service_breakdown.length} services`}/>
+                  <SectionHeader title="Service Breakdown" badge={`${filteredServices().length} services`}/>
                   <ResponsiveContainer width="100%" height={220}>
                     <PieChart>
-                      <Pie data={service_breakdown} cx="42%" cy="50%" innerRadius={52} outerRadius={82}
+                      <Pie data={filteredServices()} cx="42%" cy="50%" innerRadius={52} outerRadius={82}
                         dataKey="total_cost" nameKey="service" paddingAngle={2}>
-                        {service_breakdown.map((_,i) => <Cell key={i} fill={PIE_COLORS[i%PIE_COLORS.length]}/>)}
+                        {filteredServices().map((_,i) => <Cell key={i} fill={PIE_COLORS[i%PIE_COLORS.length]}/>)}
                       </Pie>
                       <Tooltip content={<DarkTooltip/>} formatter={(v) => fmtK(v)}/>
                       <Legend layout="vertical" align="right" verticalAlign="middle"
@@ -532,10 +668,13 @@ export default function App() {
                 <div className="lens-card">
                   <SectionHeader title="Region Breakdown"/>
                   <div style={{display:'flex',flexDirection:'column',gap:14,marginTop:4}}>
-                    {region_breakdown.map((r,i) => (
-                      <HBar key={i} rank={i} name={r.region} cost={r.total_cost}
-                        pct={(r.total_cost/maxReg)*100} color={`hsl(${210+i*25},75%,${52+i*4}%)`}/>
-                    ))}
+                    {filteredRegions().map((r,i) => {
+                      const maxR = Math.max(...accountData(REGION_DATA).map(d => d.total_cost));
+                      return (
+                        <HBar key={i} rank={i} name={r.region} cost={r.total_cost}
+                          pct={(r.total_cost/maxR)*100} color={`hsl(${210+i*25},75%,${52+i*4}%)`}/>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -546,9 +685,9 @@ export default function App() {
                   <SectionHeader title="Environment Split"/>
                   <ResponsiveContainer width="100%" height={220}>
                     <PieChart>
-                      <Pie data={environment_breakdown} cx="42%" cy="50%" innerRadius={48} outerRadius={78}
+                      <Pie data={accountData(ENV_DATA)} cx="42%" cy="50%" innerRadius={48} outerRadius={78}
                         dataKey="total_cost" nameKey="environment" paddingAngle={3}>
-                        {environment_breakdown.map((e,i) => <Cell key={i} fill={e.color}/>)}
+                        {accountData(ENV_DATA).map((e,i) => <Cell key={i} fill={PIE_COLORS[i%PIE_COLORS.length]}/>)}
                       </Pie>
                       <Tooltip content={<DarkTooltip/>}/>
                       <Legend layout="vertical" align="right" verticalAlign="middle"
@@ -562,11 +701,11 @@ export default function App() {
                     <table className="lens-table">
                       <thead><tr><th>Date</th><th>Service</th><th>Account</th><th>Category</th><th style={{textAlign:'right'}}>Amount</th></tr></thead>
                       <tbody>
-                        {transactions.slice(0,6).map(tx => (
+                        {filteredTransactions().slice(0,6).map(tx => (
                           <tr key={tx.id}>
                             <td className="td-mono">{tx.date}</td>
                             <td>{tx.service}</td>
-                            <td className="td-dim">{tx.account}</td>
+                            <td className="td-dim">{ACCOUNTS.find(a => a.id === tx.account)?.label || tx.account}</td>
                             <td><span className={`cat-badge cat-${tx.category}`}>{tx.category}</span></td>
                             <td style={{textAlign:'right'}} className="td-mono td-cost">{fmtFull(tx.amount)}</td>
                           </tr>
@@ -581,15 +720,12 @@ export default function App() {
               <div className="lens-card">
                 <SectionHeader title="Data Transfer" badge="Network"/>
                 <ResponsiveContainer width="100%" height={220}>
-                  <LineChart data={data_transfer} margin={{top:4,right:4,left:0,bottom:0}}>
+                  <LineChart data={filteredDataTransfer()} margin={{top:4,right:4,left:0,bottom:0}}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)"/>
                     <XAxis dataKey="month" tick={{fontSize:10,fill:'#475569'}} axisLine={false} tickLine={false}/>
                     <YAxis tick={{fontSize:10,fill:'#475569'}} axisLine={false} tickLine={false}/>
                     <Tooltip content={<DarkTooltip suffix="GB"/>}/>
-                    <Legend formatter={v => <span style={{fontSize:11,color:'#94A3B8'}}>{v}</span>}/>
-                    <Line type="monotone" dataKey="in"  name="Data In"      stroke="#2563EB" strokeWidth={2} dot={false}/>
-                    <Line type="monotone" dataKey="out" name="Data Out"     stroke="#EF4444" strokeWidth={2} dot={false}/>
-                    <Line type="monotone" dataKey="vpc" name="VPC Transfer" stroke="#10B981" strokeWidth={2} dot={false}/>
+                    <Line type="monotone" dataKey="in" name="Data Transfer" stroke="#2563EB" strokeWidth={2} dot={false}/>
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -599,12 +735,12 @@ export default function App() {
                 <SectionHeader title="Savings Plans & Reserved Instances" badge="Optimization"/>
                 <div className="savings-grid">
                   {[
-                    { label:'Coverage',       val:`${savings_plans.coverage}%` },
-                    { label:'Utilization',    val:`${savings_plans.utilization}%` },
-                    { label:'Monthly Saved',  val: fmtK(savings_plans.monthly_savings) },
-                    { label:'Total Saved',    val: fmtK(savings_plans.total_savings) },
-                    { label:'Commitment',     val: fmtK(savings_plans.commitment) },
-                    { label:'Actual Usage',   val: fmtK(savings_plans.actual) },
+                    { label:'Coverage', val:`${SAVINGS_PLANS.coverage}%` },
+                    { label:'Utilization', val:`${SAVINGS_PLANS.utilization}%` },
+                    { label:'Monthly Saved', val: fmtK(SAVINGS_PLANS.monthly_savings) },
+                    { label:'Total Saved', val: fmtK(SAVINGS_PLANS.total_savings) },
+                    { label:'Commitment', val: fmtK(SAVINGS_PLANS.commitment) },
+                    { label:'Actual Usage', val: fmtK(SAVINGS_PLANS.actual) },
                   ].map((s,i) => (
                     <div key={i} className="savings-stat-card">
                       <span className="ss-label">{s.label}</span>
@@ -621,31 +757,30 @@ export default function App() {
             <>
               <div className="page-hdr">
                 <h2 className="page-title">Cost Explorer</h2>
-                <p className="page-sub">Drill down into your AWS spending across all dimensions.</p>
+                <p className="page-sub">Drill down into your cloud spending across all dimensions.</p>
               </div>
 
-              {/* Filter Bar */}
               <div className="filter-bar-card">
                 <div className="filter-bar-inner">
                   <div className="filter-group">
                     <label>Account</label>
-                    <select value={filterAcct} onChange={e => setFilterAcct(e.target.value)} className="lens-select">
+                    <select value={selectedAccount} onChange={e => setSelectedAccount(e.target.value)} className="lens-select">
                       <option value="all">All Accounts</option>
-                      {summary.accounts.map((a,i) => <option key={i} value={a.account}>{a.account}</option>)}
+                      {ACCOUNTS.map((a,i) => <option key={i} value={a.id}>{a.label}</option>)}
                     </select>
                   </div>
                   <div className="filter-group">
                     <label>Service</label>
                     <select value={filterSvc} onChange={e => setFilterSvc(e.target.value)} className="lens-select">
                       <option value="all">All Services</option>
-                      {service_breakdown.map((s,i) => <option key={i} value={s.service}>{s.service}</option>)}
+                      {SERVICE_DATA.map((s,i) => <option key={i} value={s.service}>{s.service}</option>)}
                     </select>
                   </div>
                   <div className="filter-group">
                     <label>Region</label>
                     <select value={filterRegion} onChange={e => setFilterRegion(e.target.value)} className="lens-select">
                       <option value="all">All Regions</option>
-                      {region_breakdown.map((r,i) => <option key={i} value={r.region}>{r.region}</option>)}
+                      {REGION_DATA.map((r,i) => <option key={i} value={r.region}>{r.region}</option>)}
                     </select>
                   </div>
                   <div className="filter-group">
@@ -657,18 +792,16 @@ export default function App() {
                     <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="lens-select"/>
                   </div>
                   <button className="filter-apply-btn">Apply</button>
-                  <button className="filter-reset-btn" onClick={() => {setFilterAcct('all');setFilterSvc('all');setFilterRegion('all');setStartDate('');setEndDate('');}}>Reset</button>
+                  <button className="filter-reset-btn" onClick={() => {setSelectedAccount('all');setFilterSvc('all');setFilterRegion('all');setStartDate('');setEndDate('');}}>Reset</button>
                 </div>
               </div>
 
-              {/* Category chips */}
               <div className="chip-row">
                 {svcExplorerCategories.map(c => (
                   <button key={c} className={`chip ${filterSvcExplorer===c?'chip-active':''}`} onClick={() => setFilterSvcExplorer(c)}>{c}</button>
                 ))}
               </div>
 
-              {/* Monthly Trend full */}
               <div className="lens-card">
                 <SectionHeader title="Monthly Cost Breakdown" badge="12 months" action="Export CSV" onAction={exportCSV}/>
                 <div className="view-toggle-row">
@@ -691,41 +824,36 @@ export default function App() {
                     <YAxis tick={{fontSize:10,fill:'#475569'}} axisLine={false} tickLine={false} tickFormatter={v=>fmtK(v)}/>
                     <Tooltip content={<DarkTooltip/>}/>
                     <Area type="monotone" dataKey={costKey} name="Actual" stroke="#2563EB" fill="url(#expGrad)" strokeWidth={2}/>
-                    {timeGrain !== 'hourly' && (
-                      <Line type="monotone" dataKey="forecast" name="Forecast" stroke="#8B5CF6" strokeWidth={1.5} strokeDasharray="5 3" dot={false}/>
-                    )}
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
 
               <div className="grid-2col">
-                {/* Service bar */}
                 <div className="lens-card">
                   <SectionHeader title="Cost by Service" badge="breakdown"/>
                   <ResponsiveContainer width="100%" height={260}>
-                    <BarChart data={service_breakdown} layout="vertical" margin={{top:0,right:10,left:0,bottom:0}}>
+                    <BarChart data={filteredServices()} layout="vertical" margin={{top:0,right:10,left:0,bottom:0}}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" horizontal={false}/>
                       <XAxis type="number" tick={{fontSize:10,fill:'#475569'}} axisLine={false} tickLine={false} tickFormatter={v=>fmtK(v)}/>
                       <YAxis dataKey="service" type="category" tick={{fontSize:10,fill:'#94A3B8'}} width={90} axisLine={false} tickLine={false}/>
                       <Tooltip content={<DarkTooltip/>}/>
                       <Bar dataKey="total_cost" name="Cost" radius={[0,4,4,0]}>
-                        {service_breakdown.map((_,i) => <Cell key={i} fill={PIE_COLORS[i%PIE_COLORS.length]}/>)}
+                        {filteredServices().map((_,i) => <Cell key={i} fill={PIE_COLORS[i%PIE_COLORS.length]}/>)}
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
 
-                {/* Region bar */}
                 <div className="lens-card">
                   <SectionHeader title="Cost by Region" badge="geographic"/>
                   <ResponsiveContainer width="100%" height={260}>
-                    <BarChart data={region_breakdown} margin={{top:0,right:4,left:0,bottom:0}}>
+                    <BarChart data={filteredRegions()} margin={{top:0,right:4,left:0,bottom:0}}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)"/>
                       <XAxis dataKey="region" tick={{fontSize:9,fill:'#475569'}} axisLine={false} tickLine={false}/>
                       <YAxis tick={{fontSize:10,fill:'#475569'}} axisLine={false} tickLine={false} tickFormatter={v=>fmtK(v)}/>
                       <Tooltip content={<DarkTooltip/>}/>
                       <Bar dataKey="total_cost" name="Cost" radius={[4,4,0,0]}>
-                        {region_breakdown.map((_,i) => <Cell key={i} fill={`hsl(${210+i*22},75%,${55+i*3}%)`}/>)}
+                        {filteredRegions().map((_,i) => <Cell key={i} fill={`hsl(${210+i*22},75%,${55+i*3}%)`}/>)}
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
@@ -733,11 +861,10 @@ export default function App() {
               </div>
 
               <div className="grid-2col">
-                {/* Instance bar */}
                 <div className="lens-card">
                   <SectionHeader title="Cost by Instance Type" badge="compute"/>
                   <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={instance_breakdown} margin={{top:0,right:4,left:0,bottom:0}}>
+                    <BarChart data={accountData(INSTANCE_DATA)} margin={{top:0,right:4,left:0,bottom:0}}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)"/>
                       <XAxis dataKey="instance" tick={{fontSize:10,fill:'#475569'}} axisLine={false} tickLine={false}/>
                       <YAxis tick={{fontSize:10,fill:'#475569'}} axisLine={false} tickLine={false} tickFormatter={v=>fmtK(v)}/>
@@ -747,11 +874,10 @@ export default function App() {
                   </ResponsiveContainer>
                 </div>
 
-                {/* Top Projects */}
                 <div className="lens-card">
                   <SectionHeader title="Top Projects" badge="by cost"/>
                   <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={top_projects} layout="vertical" margin={{top:0,right:10,left:0,bottom:0}}>
+                    <BarChart data={accountData(PROJECT_DATA)} layout="vertical" margin={{top:0,right:10,left:0,bottom:0}}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" horizontal={false}/>
                       <XAxis type="number" tick={{fontSize:10,fill:'#475569'}} axisLine={false} tickLine={false} tickFormatter={v=>fmtK(v)}/>
                       <YAxis dataKey="project" type="category" tick={{fontSize:9,fill:'#94A3B8'}} width={110} axisLine={false} tickLine={false}/>
@@ -762,18 +888,17 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Full transactions table */}
               <div className="lens-card">
-                <SectionHeader title="Recent Transactions" badge="last 10" action="Export CSV" onAction={exportCSV}/>
+                <SectionHeader title="Recent Transactions" badge="filtered" action="Export CSV" onAction={exportCSV}/>
                 <div className="table-wrap">
                   <table className="lens-table">
                     <thead><tr><th>Date</th><th>Service</th><th>Account</th><th>Category</th><th style={{textAlign:'right'}}>Amount</th></tr></thead>
                     <tbody>
-                      {transactions.map(tx => (
+                      {filteredTransactions().map(tx => (
                         <tr key={tx.id}>
                           <td className="td-mono">{tx.date}</td>
                           <td>{tx.service}</td>
-                          <td className="td-dim">{tx.account}</td>
+                          <td className="td-dim">{ACCOUNTS.find(a => a.id === tx.account)?.label || tx.account}</td>
                           <td><span className={`cat-badge cat-${tx.category}`}>{tx.category}</span></td>
                           <td style={{textAlign:'right'}} className="td-mono td-cost">{fmtFull(tx.amount)}</td>
                         </tr>
@@ -790,7 +915,7 @@ export default function App() {
             <>
               <div className="page-hdr">
                 <h2 className="page-title">Anomaly Detection</h2>
-                <p className="page-sub">ML-powered alerts for unusual cost spikes across your AWS infrastructure.</p>
+                <p className="page-sub">ML-powered alerts for unusual cost spikes across your infrastructure.</p>
               </div>
               <div className="anom-stats-row">
                 {[{label:'Critical',val:3,c:'#EF4444'},{label:'High',val:7,c:'#F59E0B'},{label:'Medium',val:12,c:'#8B5CF6'},{label:'Resolved',val:24,c:'#10B981'}].map((s,i) => (
@@ -801,19 +926,19 @@ export default function App() {
                 ))}
               </div>
               <div style={{display:'flex',flexDirection:'column',gap:12}}>
-                {anomalies.map((a,i) => <AnomalyCard key={i} {...a}/>)}
+                {ANOMALIES.map((a,i) => <AnomalyCard key={i} {...a}/>)}
               </div>
               <div className="lens-card">
                 <SectionHeader title="Cost Anomaly Trend" badge="Last 30 days"/>
                 <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={daily_trend.map((d,i) => ({...d, anomaly: i===8?d.total_cost*2.47:i===18?d.total_cost*1.34:i===14?d.total_cost*1.89:0}))}
+                  <BarChart data={DAILY_TREND.map((d,i) => ({...d, total_cost: d.prod_main + d.prod_sec + d.staging, anomaly: i===8 ? (d.prod_main + d.prod_sec + d.staging)*2.47 : i===18 ? (d.prod_main + d.prod_sec + d.staging)*1.34 : i===14 ? (d.prod_main + d.prod_sec + d.staging)*1.89 : 0}))}
                     margin={{top:4,right:4,left:0,bottom:0}}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)"/>
                     <XAxis dataKey="day" tick={{fontSize:9,fill:'#475569'}} axisLine={false} tickLine={false}/>
                     <YAxis tick={{fontSize:10,fill:'#475569'}} axisLine={false} tickLine={false} tickFormatter={v=>fmtK(v)}/>
                     <Tooltip content={<DarkTooltip/>}/>
-                    <Bar dataKey="total_cost" name="Normal"  fill="#1E293B" radius={[2,2,0,0]}/>
-                    <Bar dataKey="anomaly"    name="Anomaly" fill="#EF4444" radius={[2,2,0,0]}/>
+                    <Bar dataKey="total_cost" name="Normal" fill="#1E293B" radius={[2,2,0,0]}/>
+                    <Bar dataKey="anomaly" name="Anomaly" fill="#EF4444" radius={[2,2,0,0]}/>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -827,40 +952,36 @@ export default function App() {
                 <h2 className="page-title">Budget Tracker</h2>
                 <p className="page-sub">Track spend against allocated budgets with real-time forecasting.</p>
               </div>
-              {/* Overview budget bar */}
               <div className="lens-card">
-                <SectionHeader title="Total Budget vs Actual" badge={`${budget.percent_used.toFixed(1)}% used`}/>
+                <SectionHeader title="Total Budget vs Actual" badge={`${BUDGET.percent_used.toFixed(1)}% used`}/>
                 <div style={{margin:'12px 0 8px'}}>
                   <div style={{display:'flex',justifyContent:'space-between',marginBottom:10,fontSize:13}}>
-                    <span>Budget: <strong>{fmtK(budget.total_budget)}</strong></span>
-                    <span>Spent: <strong style={{color: budget.percent_used>85 ? '#EF4444':'#10B981'}}>{fmtK(budget.spent)}</strong></span>
-                    <span>Remaining: <strong>{fmtK(budget.remaining)}</strong></span>
+                    <span>Budget: <strong>{fmtK(BUDGET.total_budget)}</strong></span>
+                    <span>Spent: <strong style={{color: BUDGET.percent_used>85 ? '#EF4444':'#10B981'}}>{fmtK(BUDGET.spent)}</strong></span>
+                    <span>Remaining: <strong>{fmtK(BUDGET.remaining)}</strong></span>
                   </div>
                   <div style={{height:10,background:'#1E293B',borderRadius:5,overflow:'hidden'}}>
-                    <div style={{height:'100%',width:`${budget.percent_used}%`,background:`linear-gradient(90deg,#10B981,#F59E0B,#EF4444)`,borderRadius:5,transition:'width 1s ease'}}/>
+                    <div style={{height:'100%',width:`${BUDGET.percent_used}%`,background:`linear-gradient(90deg,#10B981,#F59E0B,#EF4444)`,borderRadius:5,transition:'width 1s ease'}}/>
                   </div>
                 </div>
               </div>
-              {/* Per-category budgets */}
               {[
-                {name:'Total Cloud',   budget:300000, actual:268400, forecast:285000},
-                {name:'Compute',       budget:120000, actual:89420,  forecast:98000},
-                {name:'Database',      budget:70000,  actual:54180,  forecast:62000},
-                {name:'Storage',       budget:50000,  actual:38940,  forecast:42000},
-                {name:'Networking',    budget:40000,  actual:29310,  forecast:34000},
+                {name:'Total Cloud', budget:300000, actual:BUDGET.spent, forecast:285000},
+                {name:'Compute', budget:120000, actual:89420, forecast:98000},
+                {name:'Database', budget:70000, actual:54180, forecast:62000},
+                {name:'Storage', budget:50000, actual:38940, forecast:42000},
               ].map((b,i) => (
                 <div key={i} className="lens-card"><BudgetRow {...b}/></div>
               ))}
               <div className="lens-card">
                 <SectionHeader title="Budget vs Actual — Monthly"/>
                 <ResponsiveContainer width="100%" height={240}>
-                  <ComposedChart data={monthly_trend} margin={{top:4,right:4,left:0,bottom:0}}>
+                  <ComposedChart data={MONTHLY_TREND.map(d => ({month: d.month, total_cost: d.prod_main + d.prod_sec + d.staging}))} margin={{top:4,right:4,left:0,bottom:0}}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)"/>
                     <XAxis dataKey="month" tick={{fontSize:9,fill:'#475569'}} axisLine={false} tickLine={false}/>
                     <YAxis tick={{fontSize:10,fill:'#475569'}} axisLine={false} tickLine={false} tickFormatter={v=>fmtK(v)}/>
                     <Tooltip content={<DarkTooltip/>}/>
-                    <Bar dataKey="total_cost" name="Actual"   fill="#10B981" radius={[3,3,0,0]}/>
-                    <Line type="monotone" dataKey="forecast" name="Forecast" stroke="#F59E0B" strokeWidth={2} strokeDasharray="5 3" dot={false}/>
+                    <Bar dataKey="total_cost" name="Actual" fill="#10B981" radius={[3,3,0,0]}/>
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
@@ -875,43 +996,25 @@ export default function App() {
                 <p className="page-sub">RI and Savings Plans coverage, utilization, and optimization recommendations.</p>
               </div>
               <div className="kpi-grid-4">
-                <KPICard label="Coverage"         value={`${savings_plans.coverage}%`}       sub="of eligible spend" trend={4.2}  color="#10B981" delay={0}/>
-                <KPICard label="Utilization"      value={`${savings_plans.utilization}%`}    sub="of committed"      trend={1.8}  color="#2563EB" delay={80}/>
-                <KPICard label="Total Saved"      value={fmtK(savings_plans.monthly_savings)} sub="This month"       trend={18.7} color="#8B5CF6" delay={160}/>
-                <KPICard label="On-Demand Waste"  value={fmtK(12400)}                         sub="Uncovered spend"  trend={-8.3} color="#EF4444" delay={240}/>
+                <KPICard label="Coverage" value={`${SAVINGS_PLANS.coverage}%`} sub="of eligible spend" trend={4.2} color="#10B981" delay={0}/>
+                <KPICard label="Utilization" value={`${SAVINGS_PLANS.utilization}%`} sub="of committed" trend={1.8} color="#2563EB" delay={80}/>
+                <KPICard label="Total Saved" value={fmtK(SAVINGS_PLANS.monthly_savings)} sub="This month" trend={18.7} color="#8B5CF6" delay={160}/>
+                <KPICard label="On-Demand Waste" value={fmtK(12400)} sub="Uncovered spend" trend={-8.3} color="#EF4444" delay={240}/>
               </div>
               <div className="lens-card">
                 <SectionHeader title="Coverage Over Time" badge="12 months"/>
                 <ResponsiveContainer width="100%" height={240}>
-                  <BarChart data={monthly_trend.map(d => ({...d, covered: d.total_cost*0.685, uncovered: d.total_cost*0.315}))}
+                  <BarChart data={MONTHLY_TREND.map(d => ({...d, covered: (d.prod_main + d.prod_sec + d.staging)*0.685, uncovered: (d.prod_main + d.prod_sec + d.staging)*0.315}))}
                     margin={{top:4,right:4,left:0,bottom:0}}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)"/>
                     <XAxis dataKey="month" tick={{fontSize:9,fill:'#475569'}} axisLine={false} tickLine={false}/>
                     <YAxis tick={{fontSize:10,fill:'#475569'}} axisLine={false} tickLine={false} tickFormatter={v=>fmtK(v)}/>
                     <Tooltip content={<DarkTooltip/>}/>
                     <Legend formatter={v=><span style={{fontSize:11,color:'#94A3B8'}}>{v}</span>}/>
-                    <Bar dataKey="covered"   name="Covered"   fill="#10B981" stackId="a" radius={[0,0,0,0]}/>
+                    <Bar dataKey="covered" name="Covered" fill="#10B981" stackId="a" radius={[0,0,0,0]}/>
                     <Bar dataKey="uncovered" name="Uncovered" fill="#EF4444" stackId="a" radius={[3,3,0,0]}/>
                   </BarChart>
                 </ResponsiveContainer>
-              </div>
-              <div className="lens-card">
-                <SectionHeader title="Savings Plan Details"/>
-                <div className="savings-grid">
-                  {[
-                    {label:'SP Coverage',      val:`${savings_plans.coverage}%`},
-                    {label:'SP Utilization',   val:`${savings_plans.utilization}%`},
-                    {label:'Monthly Savings',  val:fmtK(savings_plans.monthly_savings)},
-                    {label:'Total Savings',    val:fmtK(savings_plans.total_savings)},
-                    {label:'Commitment/mo',    val:fmtK(savings_plans.commitment)},
-                    {label:'Actual Usage',     val:fmtK(savings_plans.actual)},
-                  ].map((s,i) => (
-                    <div key={i} className="savings-stat-card">
-                      <span className="ss-label">{s.label}</span>
-                      <strong className="ss-val">{s.val}</strong>
-                    </div>
-                  ))}
-                </div>
               </div>
             </>
           )}
@@ -948,9 +1051,9 @@ export default function App() {
               <div className="grid-2col">
                 {[
                   {title:'AWS Integration',sub:'Connect your AWS accounts via IAM role.'},
-                  {title:'Notifications',  sub:'Set up cost alert thresholds and email digests.'},
-                  {title:'Budget Alerts',  sub:'Configure budget alert percentages.'},
-                  {title:'Team Access',    sub:'Manage role-based access control.'},
+                  {title:'Notifications', sub:'Set up cost alert thresholds and email digests.'},
+                  {title:'Budget Alerts', sub:'Configure budget alert percentages.'},
+                  {title:'Team Access', sub:'Manage role-based access control.'},
                 ].map((s,i) => (
                   <div key={i} className="lens-card settings-card">
                     <div className="settings-title">{s.title}</div>
@@ -970,7 +1073,7 @@ export default function App() {
         <div className="ai-overlay" onClick={e => e.target === e.currentTarget && setAiOpen(false)}>
           <div className="ai-panel">
             <div className="ai-panel-header">
-              <div className="ai-panel-logo"><span className="ai-star">✦</span> LensGPT</div>
+              <div className="ai-panel-logo"><span className="ai-star">✦</span> GenAI</div>
               <button className="ai-close-btn" onClick={() => setAiOpen(false)}>✕</button>
             </div>
             <div className="ai-messages-area">
@@ -982,7 +1085,7 @@ export default function App() {
               ))}
             </div>
             <div className="ai-input-row">
-              <input className="ai-text-input" placeholder="Ask about your AWS costs…"
+              <input className="ai-text-input" placeholder="Ask about your cloud costs…"
                 value={aiInput} onChange={e => setAiInput(e.target.value)}
                 onKeyDown={e => e.key==='Enter' && sendAI()}/>
               <button className="ai-send-btn" onClick={sendAI}>→</button>
