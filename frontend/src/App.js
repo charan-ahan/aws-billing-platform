@@ -4,761 +4,564 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, Legend, ComposedChart, Area
 } from 'recharts';
-import Skeleton from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
 import './App.css';
 
-// ── API URL ────────────────────────────────────────────────────────────
 const API_BASE_URL = 'https://aws-billing-platform.onrender.com';
 
-// ── Helpers ────────────────────────────────────────────────────────────
-const formatCurrency = (v) => (v != null ? `$${Number(v).toFixed(2)}` : '$0.00');
-const formatShort = (v) => {
-  if (v == null) return '$0';
-  if (v >= 1e6) return `$${(v/1e6).toFixed(1)}M`;
-  if (v >= 1e3) return `$${(v/1e3).toFixed(1)}K`;
-  return `$${v.toFixed(0)}`;
+// ===== COMPREHENSIVE MOCK DATA =====
+const MOCK_DATA = {
+  summary: {
+    total_records: 15420,
+    total_cost: 45280.75,
+    average_cost: 36.22,
+    daily_avg: 1509.36,
+    forecast: 48750.00,
+    mom_change: 12.5,
+    accounts: [
+      { account: "Prod-Account-1", total_cost: 22640.38 },
+      { account: "Prod-Account-2", total_cost: 13584.23 },
+      { account: "Staging-Account", total_cost: 9056.15 }
+    ]
+  },
+  service_breakdown: [
+    { service: "Amazon EC2", total_cost: 15240.50 },
+    { service: "Amazon S3", total_cost: 8760.25 },
+    { service: "AWS Lambda", total_cost: 6230.80 },
+    { service: "Amazon RDS", total_cost: 5140.20 },
+    { service: "Amazon VPC", total_cost: 3870.15 },
+    { service: "AWS Glue", total_cost: 2890.45 },
+    { service: "Amazon Redshift", total_cost: 2140.30 },
+    { service: "Amazon CloudFront", total_cost: 1008.10 }
+  ],
+  category_breakdown: [
+    { category: "Compute", total_cost: 21471.30 },
+    { category: "Storage", total_cost: 10860.40 },
+    { category: "Database", total_cost: 7280.50 },
+    { category: "Networking", total_cost: 4878.25 },
+    { category: "Analytics", total_cost: 2890.45 },
+    { category: "Other", total_cost: 1900.85 }
+  ],
+  region_breakdown: [
+    { region: "us-east-1", total_cost: 15848.26 },
+    { region: "us-west-2", total_cost: 12679.31 },
+    { region: "eu-west-1", total_cost: 9056.15 },
+    { region: "ap-southeast-1", total_cost: 7696.03 }
+  ],
+  instance_breakdown: [
+    { instance: "t3.medium", total_cost: 4528.50 },
+    { instance: "t3.large", total_cost: 3840.75 },
+    { instance: "m5.large", total_cost: 3250.20 },
+    { instance: "c5.xlarge", total_cost: 2680.80 },
+    { instance: "r5.large", total_cost: 1940.35 }
+  ],
+  data_transfer: [
+    { month: "2025-07", in: 1800, out: 3200, vpc: 1200 },
+    { month: "2025-08", in: 2100, out: 3800, vpc: 1400 },
+    { month: "2025-09", in: 1950, out: 3500, vpc: 1300 },
+    { month: "2025-10", in: 2300, out: 4200, vpc: 1600 },
+    { month: "2025-11", in: 2500, out: 4500, vpc: 1800 },
+    { month: "2025-12", in: 2800, out: 5000, vpc: 2000 },
+    { month: "2026-01", in: 3100, out: 5500, vpc: 2200 },
+    { month: "2026-02", in: 2900, out: 5200, vpc: 2100 },
+    { month: "2026-03", in: 3400, out: 6000, vpc: 2500 },
+    { month: "2026-04", in: 3600, out: 6500, vpc: 2800 },
+    { month: "2026-05", in: 4000, out: 7200, vpc: 3100 },
+    { month: "2026-06", in: 4500, out: 8000, vpc: 3500 }
+  ],
+  savings_plans: {
+    coverage: 68.5,
+    utilization: 72.3,
+    monthly_savings: 1840,
+    total_savings: 22100,
+    commitment: 3520,
+    actual: 2680
+  },
+  monthly_trend: [
+    { month: "2025-07", total_cost: 3520.50 },
+    { month: "2025-08", total_cost: 4120.75 },
+    { month: "2025-09", total_cost: 3840.20 },
+    { month: "2025-10", total_cost: 4560.80 },
+    { month: "2025-11", total_cost: 4980.15 },
+    { month: "2025-12", total_cost: 5320.40 },
+    { month: "2026-01", total_cost: 5680.90 },
+    { month: "2026-02", total_cost: 5120.30 },
+    { month: "2026-03", total_cost: 6240.60 },
+    { month: "2026-04", total_cost: 6720.25 },
+    { month: "2026-05", total_cost: 7110.80 },
+    { month: "2026-06", total_cost: 7640.50 }
+  ],
+  hourly_trend: [
+    { hour: "00:00", cost: 215.50 },
+    { hour: "01:00", cost: 185.20 },
+    { hour: "02:00", cost: 152.80 },
+    { hour: "03:00", cost: 135.40 },
+    { hour: "04:00", cost: 145.60 },
+    { hour: "05:00", cost: 168.30 },
+    { hour: "06:00", cost: 220.70 },
+    { hour: "07:00", cost: 310.50 },
+    { hour: "08:00", cost: 395.80 },
+    { hour: "09:00", cost: 450.20 },
+    { hour: "10:00", cost: 480.60 },
+    { hour: "11:00", cost: 520.30 },
+    { hour: "12:00", cost: 485.70 },
+    { hour: "13:00", cost: 430.40 },
+    { hour: "14:00", cost: 490.80 },
+    { hour: "15:00", cost: 540.20 },
+    { hour: "16:00", cost: 580.60 },
+    { hour: "17:00", cost: 610.30 },
+    { hour: "18:00", cost: 550.80 },
+    { hour: "19:00", cost: 480.20 },
+    { hour: "20:00", cost: 410.60 },
+    { hour: "21:00", cost: 350.30 },
+    { hour: "22:00", cost: 280.80 },
+    { hour: "23:00", cost: 240.20 }
+  ],
+  top_services: [
+    { service: "Amazon EC2", total_cost: 15240.50 },
+    { service: "Amazon S3", total_cost: 8760.25 },
+    { service: "AWS Lambda", total_cost: 6230.80 },
+    { service: "Amazon RDS", total_cost: 5140.20 },
+    { service: "Amazon VPC", total_cost: 3870.15 }
+  ],
+  top_projects: [
+    { project: "E-commerce Platform", total_cost: 16840.25 },
+    { project: "Data Analytics", total_cost: 11240.50 },
+    { project: "Mobile Backend", total_cost: 8950.30 },
+    { project: "ML Pipeline", total_cost: 6720.45 },
+    { project: "DevOps Tools", total_cost: 4529.25 }
+  ],
+  environment_breakdown: [
+    { environment: "Production", total_cost: 27168.45 },
+    { environment: "Staging", total_cost: 11320.19 },
+    { environment: "Development", total_cost: 6792.11 }
+  ],
+  transactions: [
+    { id: 1, date: "2026-06-24", service: "Amazon EC2", account: "Prod-Account-1", amount: 245.80, category: "Compute" },
+    { id: 2, date: "2026-06-24", service: "Amazon S3", account: "Prod-Account-1", amount: 85.60, category: "Storage" },
+    { id: 3, date: "2026-06-24", service: "AWS Lambda", account: "Prod-Account-2", amount: 42.30, category: "Compute" },
+    { id: 4, date: "2026-06-23", service: "Amazon RDS", account: "Prod-Account-1", amount: 128.90, category: "Database" },
+    { id: 5, date: "2026-06-23", service: "Amazon VPC", account: "Staging-Account", amount: 36.20, category: "Networking" },
+    { id: 6, date: "2026-06-23", service: "AWS Glue", account: "Prod-Account-2", amount: 67.50, category: "Analytics" },
+    { id: 7, date: "2026-06-22", service: "Amazon EC2", account: "Prod-Account-1", amount: 320.15, category: "Compute" },
+    { id: 8, date: "2026-06-22", service: "Amazon S3", account: "Prod-Account-1", amount: 92.80, category: "Storage" },
+    { id: 9, date: "2026-06-22", service: "Amazon Redshift", account: "Prod-Account-2", amount: 215.40, category: "Database" },
+    { id: 10, date: "2026-06-21", service: "AWS Lambda", account: "Prod-Account-1", amount: 38.75, category: "Compute" }
+  ]
 };
 
-// ── Static mock data for features not yet available via API ──────────
-const STATIC_SAVINGS = {
-  coverage: 68.5,
-  utilization: 72.3,
-  monthly_savings: 34200,
-  total_savings: 208400,
-  commitment: 42000,
-  actual: 31680
-};
-const STATIC_ANOMALIES = [
-  { service: "EC2", region: "us-east-1", spike: "+247%", cost: "$12,400", time: "2h ago", severity: "critical" },
-  { service: "RDS", region: "eu-west-1", spike: "+89%", cost: "$4,210", time: "6h ago", severity: "high" },
-  { service: "Lambda", region: "us-west-2", spike: "+134%", cost: "$2,890", time: "1d ago", severity: "medium" }
-];
-const STATIC_BUDGETS = [
-  { name: "Total Cloud", budget: 300000, actual: 268400, forecast: 285000 },
-  { name: "Compute", budget: 120000, actual: 89420, forecast: 98000 },
-  { name: "Database", budget: 70000, actual: 54180, forecast: 62000 },
-  { name: "Storage", budget: 50000, actual: 38940, forecast: 42000 }
-];
-const STATIC_TRANSACTIONS = [
-  { id: 1, date: "2026-06-25", service: "Amazon EC2", account: "prod-main", amount: 2341.50, category: "Compute" },
-  { id: 2, date: "2026-06-25", service: "Amazon RDS", account: "prod-main", amount: 1876.20, category: "Database" },
-  { id: 3, date: "2026-06-24", service: "Amazon S3", account: "prod-secondary", amount: 432.80, category: "Storage" },
-  { id: 4, date: "2026-06-24", service: "CloudFront", account: "prod-main", amount: 891.40, category: "Networking" },
-  { id: 5, date: "2026-06-23", service: "AWS Lambda", account: "staging", amount: 234.10, category: "Compute" }
-];
+const COLORS = ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe', '#e0e7ff'];
 
-// ── Dark Tooltip ───────────────────────────────────────────────────────
-const DarkTooltip = ({ active, payload, label }) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div style={{
-      background: 'rgba(13,21,37,0.97)',
-      border: '1px solid #1E293B',
-      borderRadius: 10,
-      padding: '10px 14px',
-      fontSize: 12,
-      color: '#F1F5F9',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.5)'
-    }}>
-      <div style={{ color: '#94A3B8', marginBottom: 6, fontWeight: 600 }}>{label}</div>
-      {payload.map((p, i) => (
-        <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 2 }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: p.color, display: 'inline-block' }} />
-          <span style={{ color: '#94A3B8' }}>{p.name}:</span>
-          <span style={{ fontFamily: 'monospace', fontWeight: 700, color: p.color }}>
-            {formatCurrency(p.value)}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-// ── Error Boundary ─────────────────────────────────────────────────────
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-  componentDidCatch(error, info) {
-    console.error('Uncaught error:', error, info);
-  }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div style={{ padding: '40px', color: '#EF4444', background: '#1E1E2F', minHeight: '100vh' }}>
-          <h2>Something went wrong</h2>
-          <pre style={{ color: '#F1F5F9' }}>{this.state.error?.toString()}</pre>
-          <button onClick={() => window.location.reload()}>Reload</button>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
-// ── Main App ──────────────────────────────────────────────────────────
 function App() {
-  const [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeNav, setActiveNav] = useState('overview');
-  const [isDark, setIsDark] = useState(true);
-  const [timeGrain, setTimeGrain] = useState('monthly');
-  const [lastUpdated, setLastUpdated] = useState(new Date());
-  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [currentPage, setCurrentPage] = useState('home');
 
-  // ── Data states ──────────────────────────────────────────────────────
-  const [summary, setSummary] = useState(null);
-  const [monthlyTrend, setMonthlyTrend] = useState([]);
-  const [topServices, setTopServices] = useState([]);
-  const [regionBreakdown, setRegionBreakdown] = useState([]);
-  const [currentMonth, setCurrentMonth] = useState(null);
-
-  // ── Filters ──────────────────────────────────────────────────────────
   const [filters, setFilters] = useState({
+    account: 'all',
+    service: 'all',
+    region: 'all',
+    timeGrain: 'monthly',
     startDate: '',
     endDate: ''
   });
 
-  // ── Fetch real data ──────────────────────────────────────────────────
+  const [summary, setSummary] = useState(null);
+  const [serviceBreakdown, setServiceBreakdown] = useState([]);
+  const [categoryBreakdown, setCategoryBreakdown] = useState([]);
+  const [regionBreakdown, setRegionBreakdown] = useState([]);
+  const [instanceBreakdown, setInstanceBreakdown] = useState([]);
+  const [dataTransfer, setDataTransfer] = useState([]);
+  const [savingsPlans, setSavingsPlans] = useState(null);
+  const [monthlyTrend, setMonthlyTrend] = useState([]);
+  const [hourlyTrend, setHourlyTrend] = useState([]);
+  const [topServices, setTopServices] = useState([]);
+  const [topProjects, setTopProjects] = useState([]);
+  const [environmentBreakdown, setEnvironmentBreakdown] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [accounts, setAccounts] = useState([]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (filters.startDate) params.append('start_date', filters.startDate);
-      if (filters.endDate) params.append('end_date', filters.endDate);
-      const qs = params.toString() ? `?${params.toString()}` : '';
-
-      const [summaryRes, monthlyRes, servicesRes, regionRes, currentMonthRes] = await Promise.all([
-        axios.get(`${API_BASE_URL}/billing/analytics/summary${qs}`),
-        axios.get(`${API_BASE_URL}/billing/analytics/monthly-trend${qs}`),
-        axios.get(`${API_BASE_URL}/billing/analytics/top-services?limit=5${qs}`),
-        axios.get(`${API_BASE_URL}/billing/analytics/region-breakdown${qs}`),
-        axios.get(`${API_BASE_URL}/billing/analytics/current-month`)
-      ]);
-
-      setSummary(summaryRes.data);
-      setMonthlyTrend(monthlyRes.data || []);
-      setTopServices(servicesRes.data || []);
-      setRegionBreakdown(regionRes.data || []);
-      setCurrentMonth(currentMonthRes.data);
-      setLastUpdated(new Date());
+      setSummary(MOCK_DATA.summary);
+      setServiceBreakdown(MOCK_DATA.service_breakdown);
+      setCategoryBreakdown(MOCK_DATA.category_breakdown);
+      setRegionBreakdown(MOCK_DATA.region_breakdown);
+      setInstanceBreakdown(MOCK_DATA.instance_breakdown);
+      setDataTransfer(MOCK_DATA.data_transfer);
+      setSavingsPlans(MOCK_DATA.savings_plans);
+      setMonthlyTrend(MOCK_DATA.monthly_trend);
+      setHourlyTrend(MOCK_DATA.hourly_trend);
+      setTopServices(MOCK_DATA.top_services);
+      setTopProjects(MOCK_DATA.top_projects);
+      setEnvironmentBreakdown(MOCK_DATA.environment_breakdown);
+      setTransactions(MOCK_DATA.transactions);
+      setAccounts(MOCK_DATA.summary.accounts);
+      await new Promise(resolve => setTimeout(resolve, 800));
     } catch (error) {
-      console.error('Data fetch error:', error);
+      console.error('Error fetching data:', error);
     }
     setLoading(false);
   };
 
   useEffect(() => {
     fetchData();
-    setTimeout(() => setLoaded(true), 100);
   }, []);
 
-  useEffect(() => {
-    if (!autoRefresh) return;
-    const interval = setInterval(fetchData, 300000);
-    return () => clearInterval(interval);
-  }, [autoRefresh]);
+  const formatCurrency = (v) => `$${Number(v).toFixed(2)}`;
+  const formatNumber = (v) => Number(v).toLocaleString();
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-lens-theme', isDark ? 'dark' : 'light');
-  }, [isDark]);
+  const serviceOptions = ['all', ...new Set(serviceBreakdown.map(s => s.service))];
+  const regionOptions = ['all', ...new Set(regionBreakdown.map(r => r.region))];
 
-  const applyFilters = () => fetchData();
-  const resetFilters = () => {
-    setFilters({ startDate: '', endDate: '' });
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  const applyFilters = () => {
     fetchData();
   };
-  const exportCSV = () => alert('CSV export coming soon');
 
-  // ── Loading ──────────────────────────────────────────────────────────
-  if (loading) {
-    return (
-      <div className="lens-content" style={{ padding: '22px 26px', display: 'flex', flexDirection: 'column', gap: '18px', maxWidth: '100%', width: '100%' }}>
-        <div className="kpi-grid-4">
-          {[1,2,3,4].map(i => (
-            <div key={i} className="kpi-card" style={{ padding: '18px', opacity: 1, transform: 'none' }}>
-              <Skeleton height={14} width={100} baseColor={isDark ? '#1E293B' : '#E2E8F0'} highlightColor={isDark ? '#334155' : '#F1F5F9'} />
-              <Skeleton height={28} width={120} style={{ marginTop: 8 }} />
-              <Skeleton height={12} width={80} style={{ marginTop: 4 }} />
-              <Skeleton height={30} style={{ marginTop: 10 }} />
-            </div>
-          ))}
-        </div>
-        <div className="lens-card">
-          <Skeleton height={20} width={150} />
-          <Skeleton height={200} style={{ marginTop: 12 }} />
-        </div>
-        <div className="grid-2col">
-          <div className="lens-card"><Skeleton height={180} /></div>
-          <div className="lens-card"><Skeleton height={180} /></div>
-        </div>
-      </div>
-    );
-  }
+  const resetFilters = () => {
+    setFilters({
+      account: 'all',
+      service: 'all',
+      region: 'all',
+      timeGrain: 'monthly',
+      startDate: '',
+      endDate: ''
+    });
+    fetchData();
+  };
 
-  // ── Main Render ──────────────────────────────────────────────────────
+  // ===== EXPORT FUNCTIONS =====
+  const exportCSV = () => {
+    const headers = ["Date", "Service", "Account", "Category", "Amount"];
+    const rows = transactions.map(tx => [
+      tx.date,
+      tx.service,
+      tx.account,
+      tx.category,
+      tx.amount
+    ]);
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.join(","))
+    ].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "billing_data.csv";
+    link.click();
+  };
+
+  const exportPDF = () => {
+    import("html2canvas").then(html2canvas => {
+      import("jspdf").then(jspdf => {
+        const { jsPDF } = jspdf;
+        const input = document.getElementById("dashboard-content");
+        html2canvas.default(input).then(canvas => {
+          const imgData = canvas.toDataURL("image/png");
+          const pdf = new jsPDF("p", "mm", "a4");
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+          pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+          pdf.save("dashboard.pdf");
+        });
+      });
+    });
+  };
+
+  if (loading) return <div className="loading">Loading dashboard...</div>;
+  if (!summary) return <div className="error">Unable to load data.</div>;
+
   return (
-    <ErrorBoundary>
-      <div className={`lens-app ${loaded ? 'lens-loaded' : ''} ${isDark ? 'lens-dark' : 'lens-light'} ${sidebarOpen ? 'sidebar-is-open' : ''}`}>
-
-        {/* ── Aurora ── */}
-        <div className="lens-aurora" aria-hidden>
-          <div className="aurora-blob a1"/><div className="aurora-blob a2"/><div className="aurora-blob a3"/>
+    <div className="App">
+      {/* ===== SIDEBAR ===== */}
+      <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
+        <div className="sidebar-header">
+          <span className="logo">FinOps</span>
+          <button className="toggle-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            <i className={`fas ${sidebarOpen ? 'fa-chevron-left' : 'fa-chevron-right'}`}></i>
+          </button>
         </div>
 
-        {/* ── Sidebar ── */}
-        <aside className={`lens-sidebar ${sidebarOpen ? 'sb-open' : 'sb-closed'}`}>
-          <div className="sb-logo-row">
-            <div className="sb-logo-mark">◈</div>
-            {sidebarOpen && (
-              <div className="sb-logo-text">
-                <span className="sb-logo-name">GenManage</span>
-                <span className="sb-logo-sub">Lens Analytics</span>
+        <nav className="sidebar-nav">
+          <button className={`nav-item ${currentPage === 'home' ? 'active' : ''}`} onClick={() => setCurrentPage('home')}>
+            <i className="fas fa-home nav-icon"></i>{sidebarOpen && <span className="nav-label">Home</span>}
+          </button>
+          <button className={`nav-item ${currentPage === 'dashboard' ? 'active' : ''}`} onClick={() => setCurrentPage('dashboard')}>
+            <i className="fas fa-chart-pie nav-icon"></i>{sidebarOpen && <span className="nav-label">Dashboard</span>}
+          </button>
+          <button className={`nav-item ${currentPage === 'analytics' ? 'active' : ''}`} onClick={() => setCurrentPage('analytics')}>
+            <i className="fas fa-chart-line nav-icon"></i>{sidebarOpen && <span className="nav-label">Analytics</span>}
+          </button>
+          <button className={`nav-item ${currentPage === 'reports' ? 'active' : ''}`} onClick={() => setCurrentPage('reports')}>
+            <i className="fas fa-file-alt nav-icon"></i>{sidebarOpen && <span className="nav-label">Reports</span>}
+          </button>
+          <button className={`nav-item ${currentPage === 'settings' ? 'active' : ''}`} onClick={() => setCurrentPage('settings')}>
+            <i className="fas fa-cog nav-icon"></i>{sidebarOpen && <span className="nav-label">Settings</span>}
+          </button>
+        </nav>
+
+        <div className="sidebar-footer">
+          <button className="nav-item"><i className="fas fa-comment-dots nav-icon"></i>{sidebarOpen && <span className="nav-label">Chat History</span>}</button>
+          <button className="nav-item"><i className="fas fa-user-circle nav-icon"></i>{sidebarOpen && <span className="nav-label">Profile</span>}</button>
+        </div>
+      </aside>
+
+      {/* ===== MAIN CONTENT ===== */}
+      <main className={`main-content ${sidebarOpen ? 'with-sidebar' : 'full-width'}`}>
+
+        {/* ===== HOME PAGE ===== */}
+        {currentPage === 'home' && (
+          <div className="page-content">
+            <h2>Home</h2>
+            <p className="page-subtitle">Welcome to the FinOps Analytics Platform. Select a module to get started.</p>
+            <div className="home-grid">
+              <div className="home-card" onClick={() => setCurrentPage('dashboard')}>
+                <div className="home-icon"><i className="fas fa-chart-pie"></i></div>
+                <h3>Dashboard</h3><p>Real-time cost visibility across all accounts</p>
               </div>
-            )}
+              <div className="home-card" onClick={() => setCurrentPage('analytics')}>
+                <div className="home-icon"><i className="fas fa-chart-line"></i></div>
+                <h3>Analytics</h3><p>Deep dive into your cost data and trends</p>
+              </div>
+              <div className="home-card" onClick={() => setCurrentPage('reports')}>
+                <div className="home-icon"><i className="fas fa-file-alt"></i></div>
+                <h3>Reports</h3><p>Generate and export detailed reports</p>
+              </div>
+              <div className="home-card" onClick={() => setCurrentPage('settings')}>
+                <div className="home-icon"><i className="fas fa-cog"></i></div>
+                <h3>Settings</h3><p>Configure your preferences and integrations</p>
+              </div>
+            </div>
           </div>
-          <nav className="sb-nav">
-            <button className={`sb-nav-item ${activeNav === 'overview' ? 'sb-active' : ''}`} onClick={() => setActiveNav('overview')}>
-              <span className="sb-nav-icon">◈</span>
-              {sidebarOpen && <span className="sb-nav-label">Overview</span>}
-            </button>
-            <button className={`sb-nav-item ${activeNav === 'explorer' ? 'sb-active' : ''}`} onClick={() => setActiveNav('explorer')}>
-              <span className="sb-nav-icon">◎</span>
-              {sidebarOpen && <span className="sb-nav-label">Cost Explorer</span>}
-            </button>
-            <button className={`sb-nav-item ${activeNav === 'anomalies' ? 'sb-active' : ''}`} onClick={() => setActiveNav('anomalies')}>
-              <span className="sb-nav-icon">◬</span>
-              {sidebarOpen && <span className="sb-nav-label">Anomalies</span>}
-            </button>
-            <button className={`sb-nav-item ${activeNav === 'budgets' ? 'sb-active' : ''}`} onClick={() => setActiveNav('budgets')}>
-              <span className="sb-nav-icon">◉</span>
-              {sidebarOpen && <span className="sb-nav-label">Budgets</span>}
-            </button>
-            <button className={`sb-nav-item ${activeNav === 'savings' ? 'sb-active' : ''}`} onClick={() => setActiveNav('savings')}>
-              <span className="sb-nav-icon">◌</span>
-              {sidebarOpen && <span className="sb-nav-label">Savings</span>}
-            </button>
-            <button className={`sb-nav-item ${activeNav === 'reports' ? 'sb-active' : ''}`} onClick={() => setActiveNav('reports')}>
-              <span className="sb-nav-icon">▤</span>
-              {sidebarOpen && <span className="sb-nav-label">Reports</span>}
-            </button>
-            <button className={`sb-nav-item ${activeNav === 'settings' ? 'sb-active' : ''}`} onClick={() => setActiveNav('settings')}>
-              <span className="sb-nav-icon">⚙</span>
-              {sidebarOpen && <span className="sb-nav-label">Settings</span>}
-            </button>
-          </nav>
-          <div className="sb-footer">
-            <button className="sb-footer-btn" onClick={() => setIsDark(!isDark)}>
-              <span>{isDark ? '☀' : '☾'}</span>
-              {sidebarOpen && <span className="sb-nav-label">{isDark ? 'Light' : 'Dark'}</span>}
-            </button>
+        )}
+
+        {/* ===== DASHBOARD PAGE ===== */}
+        {currentPage === 'dashboard' && (
+          <div id="dashboard-content" className="page-content">
+            <h2>Dashboard</h2>
+            <p className="page-subtitle">Unified cost intelligence across your AWS environment</p>
+
+            {/* EXPORT BUTTONS */}
+            <div className="export-buttons">
+              <button className="btn-export" onClick={exportCSV}><i className="fas fa-file-csv"></i> Export CSV</button>
+              <button className="btn-export" onClick={exportPDF}><i className="fas fa-file-pdf"></i> Export PDF</button>
+            </div>
+
+            {/* FILTERS */}
+            <div className="filters">
+              <div className="filter-group">
+                <label><i className="fas fa-users"></i> Account</label>
+                <select value={filters.account} onChange={(e) => handleFilterChange('account', e.target.value)} className="filter-select">
+                  <option value="all">All Accounts</option>
+                  {accounts.map((acc, idx) => (<option key={idx} value={acc.account}>{acc.account}</option>))}
+                </select>
+              </div>
+              <div className="filter-group">
+                <label><i className="fas fa-server"></i> Service</label>
+                <select value={filters.service} onChange={(e) => handleFilterChange('service', e.target.value)} className="filter-select">
+                  <option value="all">All Services</option>
+                  {serviceOptions.filter(s => s !== 'all').map((s, idx) => (<option key={idx} value={s}>{s}</option>))}
+                </select>
+              </div>
+              <div className="filter-group">
+                <label><i className="fas fa-globe"></i> Region</label>
+                <select value={filters.region} onChange={(e) => handleFilterChange('region', e.target.value)} className="filter-select">
+                  <option value="all">All Regions</option>
+                  {regionOptions.filter(r => r !== 'all').map((r, idx) => (<option key={idx} value={r}>{r}</option>))}
+                </select>
+              </div>
+              <div className="filter-group">
+                <label><i className="fas fa-clock"></i> Time Grain</label>
+                <select value={filters.timeGrain} onChange={(e) => handleFilterChange('timeGrain', e.target.value)} className="filter-select">
+                  <option value="hourly">Hourly</option><option value="daily">Daily</option><option value="monthly">Monthly</option>
+                </select>
+              </div>
+              <div className="filter-group">
+                <label><i className="fas fa-calendar-alt"></i> From</label>
+                <input type="date" value={filters.startDate} onChange={(e) => handleFilterChange('startDate', e.target.value)} />
+              </div>
+              <div className="filter-group">
+                <label><i className="fas fa-calendar-alt"></i> To</label>
+                <input type="date" value={filters.endDate} onChange={(e) => handleFilterChange('endDate', e.target.value)} />
+              </div>
+              <button className="btn-primary" onClick={applyFilters}><i className="fas fa-search"></i> Apply</button>
+              <button className="btn-secondary" onClick={resetFilters}><i className="fas fa-undo"></i> Reset</button>
+            </div>
+
+            {/* KPI CARDS */}
+            <div className="kpi-grid">
+              <div className="kpi-card"><div className="kpi-label"><i className="fas fa-dollar-sign"></i> Total Cost</div><div className="kpi-value">{formatCurrency(summary.total_cost)}</div><div className="kpi-trend">Last 30 days</div></div>
+              <div className="kpi-card"><div className="kpi-label"><i className="fas fa-calendar-day"></i> Daily Average</div><div className="kpi-value">{formatCurrency(summary.daily_avg || summary.total_cost / 30)}</div><div className="kpi-trend">Per day</div></div>
+              <div className="kpi-card"><div className="kpi-label"><i className="fas fa-chart-simple"></i> Forecast</div><div className="kpi-value">{formatCurrency(summary.forecast || summary.total_cost * 1.08)}</div><div className="kpi-trend" style={{ color: '#eab308' }}>Month-end projection</div></div>
+              <div className="kpi-card"><div className="kpi-label"><i className="fas fa-arrow-trend-up"></i> MoM Change</div><div className="kpi-value" style={{ color: summary.mom_change > 0 ? '#ef4444' : '#22c55e' }}>{summary.mom_change > 0 ? '↑' : '↓'} {Math.abs(summary.mom_change || 0).toFixed(1)}%</div><div className="kpi-trend">vs last month</div></div>
+              <div className="kpi-card"><div className="kpi-label"><i className="fas fa-piggy-bank"></i> Savings Plan</div><div className="kpi-value">{savingsPlans?.coverage || 0}%</div><div className="kpi-trend" style={{ color: '#22c55e' }}>Coverage</div></div>
+              <div className="kpi-card"><div className="kpi-label"><i className="fas fa-arrow-right-arrow-left"></i> Data Transfer</div><div className="kpi-value">12.3 TB</div><div className="kpi-trend">Last 30 days</div></div>
+            </div>
+
+            {/* CHARTS ROW 1 */}
+            <div className="charts-grid">
+              <div className="chart-card full-width">
+                <div className="chart-header"><h3><i className="fas fa-chart-simple"></i> Cost Trend ({filters.timeGrain})</h3><span className="chart-badge">{filters.timeGrain === 'hourly' ? 'Last 24 hours' : filters.timeGrain === 'daily' ? 'Last 30 days' : '12 months'}</span></div>
+                <ResponsiveContainer width="100%" height={280}>
+                  <ComposedChart data={filters.timeGrain === 'hourly' ? hourlyTrend : monthlyTrend}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey={filters.timeGrain === 'hourly' ? 'hour' : 'month'} tick={{ fontSize: 11, fill: '#64748b' }} />
+                    <YAxis tick={{ fontSize: 11, fill: '#64748b' }} />
+                    <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: 'white', border: 'none', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                    <Area type="monotone" dataKey={filters.timeGrain === 'hourly' ? 'cost' : 'total_cost'} stroke="#3b82f6" fill="#93c5fd" fillOpacity={0.3} />
+                    <Line type="monotone" dataKey={filters.timeGrain === 'hourly' ? 'cost' : 'total_cost'} stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6', r: 3 }} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* CHARTS ROW 2 */}
+            <div className="charts-grid">
+              <div className="chart-card"><div className="chart-header"><h3><i className="fas fa-server"></i> Cost by Service</h3><span className="chart-badge">breakdown</span></div>
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart data={serviceBreakdown} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 11, fill: '#64748b' }} />
+                    <YAxis dataKey="service" type="category" tick={{ fontSize: 11, fill: '#64748b' }} width={100} />
+                    <Tooltip formatter={(v) => formatCurrency(v)} />
+                    <Bar dataKey="total_cost" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="chart-card"><div className="chart-header"><h3><i className="fas fa-layer-group"></i> Cost by Category</h3><span className="chart-badge">breakdown</span></div>
+                <ResponsiveContainer width="100%" height={260}>
+                  <PieChart>
+                    <Pie data={categoryBreakdown} cx="50%" cy="50%" innerRadius={50} outerRadius={85} dataKey="total_cost" label={({ category, total_cost }) => `${category}: $${total_cost.toFixed(0)}`} labelLine={false}>
+                      {categoryBreakdown.map((_, i) => (<Cell key={i} fill={COLORS[i % COLORS.length]} />))}
+                    </Pie>
+                    <Tooltip formatter={(v) => formatCurrency(v)} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* CHARTS ROW 3 */}
+            <div className="charts-grid">
+              <div className="chart-card"><div className="chart-header"><h3><i className="fas fa-globe"></i> Cost by Region</h3><span className="chart-badge">geographic</span></div>
+                <ResponsiveContainer width="100%" height={240}>
+                  <BarChart data={regionBreakdown}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="region" tick={{ fontSize: 11, fill: '#64748b' }} />
+                    <YAxis tick={{ fontSize: 11, fill: '#64748b' }} />
+                    <Tooltip formatter={(v) => formatCurrency(v)} />
+                    <Bar dataKey="total_cost" fill="#60a5fa" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="chart-card"><div className="chart-header"><h3><i className="fas fa-microchip"></i> Cost by Instance Type</h3><span className="chart-badge">compute</span></div>
+                <ResponsiveContainer width="100%" height={240}>
+                  <BarChart data={instanceBreakdown}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="instance" tick={{ fontSize: 11, fill: '#64748b' }} />
+                    <YAxis tick={{ fontSize: 11, fill: '#64748b' }} />
+                    <Tooltip formatter={(v) => formatCurrency(v)} />
+                    <Bar dataKey="total_cost" fill="#93c5fd" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* DATA TRANSFER CHART */}
+            <div className="charts-grid">
+              <div className="chart-card full-width"><div className="chart-header"><h3><i className="fas fa-arrow-right-arrow-left"></i> Data Transfer (In / Out / VPC)</h3><span className="chart-badge">network</span></div>
+                <ResponsiveContainer width="100%" height={260}>
+                  <LineChart data={dataTransfer}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#64748b' }} />
+                    <YAxis tick={{ fontSize: 11, fill: '#64748b' }} />
+                    <Tooltip formatter={(v) => `${v.toFixed(0)} GB`} />
+                    <Legend />
+                    <Line type="monotone" dataKey="in" stroke="#3b82f6" name="Data In" strokeWidth={2} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="out" stroke="#ef4444" name="Data Out" strokeWidth={2} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="vpc" stroke="#22c55e" name="VPC Transfer" strokeWidth={2} dot={{ r: 3 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* BOTTOM GRID */}
+            <div className="bottom-grid">
+              <div className="chart-card"><div className="chart-header"><h3><i className="fas fa-project-diagram"></i> Top Projects</h3><span className="chart-badge">by cost</span></div>
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={topProjects} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 11, fill: '#64748b' }} />
+                    <YAxis dataKey="project" type="category" tick={{ fontSize: 11, fill: '#64748b' }} width={100} />
+                    <Tooltip formatter={(v) => formatCurrency(v)} />
+                    <Bar dataKey="total_cost" fill="#60a5fa" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="chart-card"><div className="chart-header"><h3><i className="fas fa-cubes"></i> Environment Breakdown</h3><span className="chart-badge">distribution</span></div>
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie data={environmentBreakdown} cx="50%" cy="50%" innerRadius={40} outerRadius={75} dataKey="total_cost" label={({ environment, total_cost }) => `${environment}: $${total_cost.toFixed(0)}`} labelLine={false}>
+                      {environmentBreakdown.map((_, i) => (<Cell key={i} fill={COLORS[i % COLORS.length]} />))}
+                    </Pie>
+                    <Tooltip formatter={(v) => formatCurrency(v)} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* SAVINGS PLANS PANEL */}
+            <div className="savings-plans-panel">
+              <div className="savings-plans-header"><h3><i className="fas fa-piggy-bank"></i> Savings Plans & Reserved Instances</h3><span className="chart-badge">optimization</span></div>
+              <div className="savings-plans-grid">
+                <div className="savings-card"><span>Coverage</span><strong>{savingsPlans?.coverage || 0}%</strong></div>
+                <div className="savings-card"><span>Utilization</span><strong>{savingsPlans?.utilization || 0}%</strong></div>
+                <div className="savings-card"><span>Monthly Savings</span><strong>{formatCurrency(savingsPlans?.monthly_savings || 0)}</strong></div>
+                <div className="savings-card"><span>Total Savings</span><strong>{formatCurrency(savingsPlans?.total_savings || 0)}</strong></div>
+                <div className="savings-card"><span>Commitment</span><strong>{formatCurrency(savingsPlans?.commitment || 0)}</strong></div>
+                <div className="savings-card"><span>Actual Usage</span><strong>{formatCurrency(savingsPlans?.actual || 0)}</strong></div>
+              </div>
+            </div>
+
+            {/* TRANSACTION TABLE */}
+            <div className="chart-card full-width" style={{ marginTop: '16px' }}>
+              <div className="chart-header"><h3><i className="fas fa-list-ul"></i> Recent Transactions</h3><span className="chart-badge">last 10</span></div>
+              <div className="table-container">
+                <table className="transaction-table">
+                  <thead><tr><th>Date</th><th>Service</th><th>Account</th><th>Category</th><th style={{ textAlign: 'right' }}>Amount</th></tr></thead>
+                  <tbody>
+                    {transactions.map((tx) => (
+                      <tr key={tx.id}>
+                        <td>{tx.date}</td>
+                        <td>{tx.service}</td>
+                        <td>{tx.account}</td>
+                        <td><span className={`category-badge ${tx.category}`}>{tx.category}</span></td>
+                        <td style={{ textAlign: 'right' }}>{formatCurrency(tx.amount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
-        </aside>
+        )}
 
-        {/* ── Main Content ── */}
-        <div className="lens-main">
-
-          {/* Topbar */}
-          <header className="lens-topbar">
-            <button className="topbar-hamburger" onClick={() => setSidebarOpen(!sidebarOpen)}>
-              <span/><span/><span/>
-            </button>
-            <div className="topbar-breadcrumb">
-              <span className="bc-root">Lens</span>
-              <span className="bc-sep">›</span>
-              <span className="bc-cur">{activeNav.charAt(0).toUpperCase()+activeNav.slice(1)}</span>
-            </div>
-            <div className="topbar-right">
-              <div className="topbar-meta">
-                <span>🕐</span>
-                <span>{lastUpdated.toLocaleTimeString()}</span>
-                <button className="refresh-icon-btn" onClick={fetchData} title="Refresh">↺</button>
-                <label className="auto-label">
-                  <input type="checkbox" checked={autoRefresh} onChange={e => setAutoRefresh(e.target.checked)} />
-                  Auto
-                </label>
-              </div>
-              <button className="topbar-ai-btn">✦ GenAI</button>
-              <div className="topbar-avatar">PK</div>
-            </div>
-          </header>
-
-          {/* Content */}
-          <div className="lens-content">
-
-            {/* ── Global Filter Bar ── */}
-            <div className="filter-bar-card">
-              <div className="filter-bar-inner">
-                <div className="filter-group">
-                  <label>Time Grain</label>
-                  <select className="lens-select" value={timeGrain} onChange={e => setTimeGrain(e.target.value)}>
-                    <option value="monthly">Monthly</option>
-                    <option value="daily">Daily</option>
-                    <option value="hourly">Hourly</option>
-                  </select>
-                </div>
-                <div className="filter-group">
-                  <label>From</label>
-                  <input type="date" className="lens-select" value={filters.startDate} onChange={e => setFilters({...filters, startDate: e.target.value})} />
-                </div>
-                <div className="filter-group">
-                  <label>To</label>
-                  <input type="date" className="lens-select" value={filters.endDate} onChange={e => setFilters({...filters, endDate: e.target.value})} />
-                </div>
-                <button className="filter-apply-btn" onClick={applyFilters}>Apply</button>
-                <button className="filter-reset-btn" onClick={resetFilters}>Reset</button>
-                <button className="filter-apply-btn" style={{ background: '#22c55e' }} onClick={exportCSV}>CSV</button>
-              </div>
-            </div>
-
-            {/* ── OVERVIEW PAGE ── */}
-            {activeNav === 'overview' && (
-              <>
-                {/* KPI Cards */}
-                <div className="kpi-grid-4">
-                  <div className="kpi-card kpi-visible">
-                    <div className="kpi-glow" style={{ '--kpi-color': '#2563EB' }} />
-                    <div className="kpi-top-row">
-                      <span className="kpi-label-text">Total Cost</span>
-                      <span className="kpi-trend-pill trend-up">↑ 12.4%</span>
-                    </div>
-                    <div className="kpi-value-text">{summary ? formatShort(summary.total_cost) : '$0'}</div>
-                    <div className="kpi-sub-text">Last 30 days</div>
-                  </div>
-                  <div className="kpi-card kpi-visible">
-                    <div className="kpi-glow" style={{ '--kpi-color': '#06B6D4' }} />
-                    <div className="kpi-top-row">
-                      <span className="kpi-label-text">Daily Avg</span>
-                      <span className="kpi-trend-pill trend-down">↓ 3.2%</span>
-                    </div>
-                    <div className="kpi-value-text">{summary ? formatShort(summary.total_cost / 30) : '$0'}</div>
-                    <div className="kpi-sub-text">Per day</div>
-                  </div>
-                  <div className="kpi-card kpi-visible">
-                    <div className="kpi-glow" style={{ '--kpi-color': '#8B5CF6' }} />
-                    <div className="kpi-top-row">
-                      <span className="kpi-label-text">Services</span>
-                      <span className="kpi-trend-pill trend-up">↑ 6.1%</span>
-                    </div>
-                    <div className="kpi-value-text">{summary ? summary.service_count : '0'}</div>
-                    <div className="kpi-sub-text">Active services</div>
-                  </div>
-                  <div className="kpi-card kpi-visible">
-                    <div className="kpi-glow" style={{ '--kpi-color': '#10B981' }} />
-                    <div className="kpi-top-row">
-                      <span className="kpi-label-text">This Month</span>
-                      <span className="kpi-trend-pill trend-up">↑ 18.7%</span>
-                    </div>
-                    <div className="kpi-value-text">{currentMonth ? formatShort(currentMonth.current_month_cost) : '$0'}</div>
-                    <div className="kpi-sub-text">{currentMonth ? `${currentMonth.change_percent?.toFixed(1) || 0}% vs last` : ''}</div>
-                  </div>
-                </div>
-
-                {/* Cost Trend Chart */}
-                <div className="lens-card">
-                  <div className="sec-header">
-                    <span className="sec-title">Cost Trend</span>
-                    <span className="sec-badge">Live</span>
-                  </div>
-                  <div className="view-toggle-row">
-                    {['hourly','daily','monthly'].map(v => (
-                      <button key={v} className={`view-toggle-btn ${timeGrain===v?'vt-active':''}`} onClick={() => setTimeGrain(v)}>
-                        {v.charAt(0).toUpperCase()+v.slice(1)}
-                      </button>
-                    ))}
-                  </div>
-                  <ResponsiveContainer width="100%" height={260}>
-                    <ComposedChart data={monthlyTrend}>
-                      <defs>
-                        <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#2563EB" stopOpacity="0.25" />
-                          <stop offset="100%" stopColor="#2563EB" stopOpacity="0" />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                      <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#94A3B8' }} />
-                      <YAxis tick={{ fontSize: 10, fill: '#94A3B8' }} tickFormatter={v => formatShort(v)} />
-                      <Tooltip content={<DarkTooltip />} />
-                      <Area type="monotone" dataKey="total_cost" stroke="#2563EB" fill="url(#trendGrad)" strokeWidth={2} />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </div>
-
-                {/* Services & Regions */}
-                <div className="grid-2col">
-                  <div className="lens-card">
-                    <div className="sec-header">
-                      <span className="sec-title">Top Services</span>
-                      <span className="sec-badge">by cost</span>
-                    </div>
-                    <ResponsiveContainer width="100%" height={260}>
-                      <BarChart data={topServices} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" horizontal={false} />
-                        <XAxis type="number" tick={{ fontSize: 10, fill: '#94A3B8' }} tickFormatter={v => formatShort(v)} />
-                        <YAxis dataKey="service" type="category" tick={{ fontSize: 10, fill: '#94A3B8' }} width={100} />
-                        <Tooltip formatter={(v) => formatCurrency(v)} />
-                        <Bar dataKey="total_cost" fill="#3b82f6" radius={[0, 4, 4, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  <div className="lens-card">
-                    <div className="sec-header">
-                      <span className="sec-title">Region Breakdown</span>
-                      <span className="sec-badge">geographic</span>
-                    </div>
-                    <ResponsiveContainer width="100%" height={260}>
-                      <BarChart data={regionBreakdown}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                        <XAxis dataKey="region" tick={{ fontSize: 10, fill: '#94A3B8' }} />
-                        <YAxis tick={{ fontSize: 10, fill: '#94A3B8' }} tickFormatter={v => formatShort(v)} />
-                        <Tooltip formatter={(v) => formatCurrency(v)} />
-                        <Bar dataKey="total_cost" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-                {/* Environment Breakdown & Data Transfer (mock) */}
-                <div className="grid-2col">
-                  <div className="lens-card">
-                    <div className="sec-header">
-                      <span className="sec-title">Environment</span>
-                      <span className="sec-badge">breakdown</span>
-                    </div>
-                    <ResponsiveContainer width="100%" height={220}>
-                      <PieChart>
-                        <Pie data={[
-                          { name: "Production", value: 178400, color: "#2563EB" },
-                          { name: "Staging", value: 56200, color: "#8B5CF6" },
-                          { name: "Development", value: 22400, color: "#06B6D4" },
-                          { name: "QA", value: 11400, color: "#10B981" }
-                        ]} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" nameKey="name" label={({name, value}) => `${name}: $${(value/1000).toFixed(0)}K`} labelLine={false}>
-                          <Cell fill="#2563EB" /><Cell fill="#8B5CF6" /><Cell fill="#06B6D4" /><Cell fill="#10B981" />
-                        </Pie>
-                        <Tooltip formatter={(v) => formatCurrency(v)} />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  <div className="lens-card">
-                    <div className="sec-header">
-                      <span className="sec-title">Data Transfer</span>
-                      <span className="sec-badge">network</span>
-                    </div>
-                    <ResponsiveContainer width="100%" height={220}>
-                      <LineChart data={[
-                        { month: 'Jun', in: 4500, out: 8000, vpc: 3500 },
-                        { month: 'Jul', in: 4200, out: 7200, vpc: 3100 },
-                        { month: 'Aug', in: 4000, out: 6500, vpc: 2800 }
-                      ]}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                        <XAxis dataKey="month" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Line type="monotone" dataKey="in" stroke="#3b82f6" name="Data In" />
-                        <Line type="monotone" dataKey="out" stroke="#ef4444" name="Data Out" />
-                        <Line type="monotone" dataKey="vpc" stroke="#22c55e" name="VPC Transfer" />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-                {/* Savings Plans Panel (static mock) */}
-                <div className="lens-card">
-                  <div className="sec-header">
-                    <span className="sec-title">Savings Plans & RI</span>
-                    <span className="sec-badge">optimization</span>
-                  </div>
-                  <div className="savings-grid">
-                    {[
-                      { label:'Coverage', val:`${STATIC_SAVINGS.coverage}%` },
-                      { label:'Utilization', val:`${STATIC_SAVINGS.utilization}%` },
-                      { label:'Monthly Saved', val: formatShort(STATIC_SAVINGS.monthly_savings) },
-                      { label:'Total Saved', val: formatShort(STATIC_SAVINGS.total_savings) },
-                      { label:'Commitment', val: formatShort(STATIC_SAVINGS.commitment) },
-                      { label:'Actual Usage', val: formatShort(STATIC_SAVINGS.actual) }
-                    ].map((s,i) => (
-                      <div key={i} className="savings-stat-card">
-                        <span className="ss-label">{s.label}</span>
-                        <strong className="ss-val">{s.val}</strong>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Recent Transactions (static mock) */}
-                <div className="lens-card">
-                  <div className="sec-header">
-                    <span className="sec-title">Recent Transactions</span>
-                    <span className="sec-badge">last 5</span>
-                  </div>
-                  <div className="table-wrap">
-                    <table className="lens-table">
-                      <thead><tr><th>Date</th><th>Service</th><th>Account</th><th>Category</th><th>Amount</th></tr></thead>
-                      <tbody>
-                        {STATIC_TRANSACTIONS.map(tx => (
-                          <tr key={tx.id}>
-                            <td>{tx.date}</td>
-                            <td>{tx.service}</td>
-                            <td>{tx.account}</td>
-                            <td><span className={`cat-badge cat-${tx.category}`}>{tx.category}</span></td>
-                            <td>{formatCurrency(tx.amount)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* ── COST EXPLORER PAGE ── */}
-            {activeNav === 'explorer' && (
-              <>
-                <div className="page-hdr">
-                  <h2 className="page-title">Cost Explorer</h2>
-                  <p className="page-sub">Drill down into your cloud spending across all dimensions.</p>
-                </div>
-                <div className="lens-card">
-                  <div className="sec-header">
-                    <span className="sec-title">Monthly Cost Breakdown</span>
-                    <span className="sec-badge">12 months</span>
-                  </div>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={monthlyTrend}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                      <XAxis dataKey="month" />
-                      <YAxis tickFormatter={v => formatShort(v)} />
-                      <Tooltip formatter={(v) => formatCurrency(v)} />
-                      <Bar dataKey="total_cost" fill="#3b82f6" radius={[4,4,0,0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="grid-2col">
-                  <div className="lens-card">
-                    <div className="sec-header"><span className="sec-title">Top Services</span></div>
-                    <ResponsiveContainer width="100%" height={260}>
-                      <BarChart data={topServices} layout="vertical">
-                        <XAxis type="number" tickFormatter={v => formatShort(v)} />
-                        <YAxis dataKey="service" type="category" width={100} />
-                        <Tooltip formatter={(v) => formatCurrency(v)} />
-                        <Bar dataKey="total_cost" fill="#3b82f6" radius={[0,4,4,0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="lens-card">
-                    <div className="sec-header"><span className="sec-title">Region Breakdown</span></div>
-                    <ResponsiveContainer width="100%" height={260}>
-                      <BarChart data={regionBreakdown}>
-                        <XAxis dataKey="region" />
-                        <YAxis tickFormatter={v => formatShort(v)} />
-                        <Tooltip formatter={(v) => formatCurrency(v)} />
-                        <Bar dataKey="total_cost" fill="#8b5cf6" radius={[4,4,0,0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* ── ANOMALIES PAGE ── */}
-            {activeNav === 'anomalies' && (
-              <>
-                <div className="page-hdr">
-                  <h2 className="page-title">Anomaly Detection</h2>
-                  <p className="page-sub">ML-powered alerts for unusual cost spikes.</p>
-                </div>
-                <div className="anom-stats-row">
-                  {[{label:'Critical',val:3,c:'#EF4444'},{label:'High',val:7,c:'#F59E0B'},{label:'Medium',val:12,c:'#8B5CF6'},{label:'Resolved',val:24,c:'#10B981'}].map((s,i) => (
-                    <div key={i} className="lens-card anom-stat">
-                      <span className="anom-stat-num" style={{color:s.c}}>{s.val}</span>
-                      <span className="anom-stat-label">{s.label}</span>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {STATIC_ANOMALIES.map((a,i) => (
-                    <div key={i} className="anomaly-card" style={{'--sev': a.severity==='critical'?'#EF4444':a.severity==='high'?'#F59E0B':'#8B5CF6'}}>
-                      <div className="anomaly-pulse" />
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <span style={{ fontWeight: 700, fontSize: 14 }}>{a.service}</span>
-                        <span style={{ color: '#EF4444', fontWeight: 800, fontFamily: 'monospace' }}>{a.spike}</span>
-                      </div>
-                      <div style={{ display: 'flex', gap: 16, fontSize: 12, color: '#94A3B8' }}>
-                        <span>{a.region}</span>
-                        <span>{a.cost}</span>
-                        <span>{a.time}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {/* ── BUDGETS PAGE ── */}
-            {activeNav === 'budgets' && (
-              <>
-                <div className="page-hdr">
-                  <h2 className="page-title">Budget Tracker</h2>
-                  <p className="page-sub">Track spend against allocated budgets.</p>
-                </div>
-                <div className="lens-card">
-                  <div className="sec-header">
-                    <span className="sec-title">Budget Overview</span>
-                    <span className="sec-badge">{((BUDGET_TOTAL_ACTUAL/BUDGET_TOTAL_BUDGET)*100).toFixed(1)}% used</span>
-                  </div>
-                  {/* Budget summary bar */}
-                  <div style={{ margin: '12px 0' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <span>Budget: ${(BUDGET_TOTAL_BUDGET/1000).toFixed(0)}K</span>
-                      <span>Actual: ${(BUDGET_TOTAL_ACTUAL/1000).toFixed(0)}K</span>
-                      <span>Remaining: ${((BUDGET_TOTAL_BUDGET-BUDGET_TOTAL_ACTUAL)/1000).toFixed(0)}K</span>
-                    </div>
-                    <div style={{ height: 8, background: '#1E293B', borderRadius: 4, overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${(BUDGET_TOTAL_ACTUAL/BUDGET_TOTAL_BUDGET)*100}%`, background: `linear-gradient(90deg,#10B981,#F59E0B,#EF4444)`, borderRadius: 4 }} />
-                    </div>
-                  </div>
-                </div>
-                {STATIC_BUDGETS.map((b,i) => {
-                  const pct = (b.actual/b.budget)*100;
-                  return (
-                    <div key={i} className="lens-card">
-                      <div className="budget-row-inner">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                          <span style={{ fontWeight: 600, fontSize: 13 }}>{b.name}</span>
-                          <span style={{ fontFamily: 'monospace', fontSize: 12 }}>
-                            <span style={{ color: pct>85?'#EF4444':'#10B981', fontWeight: 700 }}>{formatShort(b.actual)}</span>
-                            <span style={{ color: '#475569' }}> / {formatShort(b.budget)}</span>
-                          </span>
-                        </div>
-                        <div style={{ height: 6, background: '#1E293B', borderRadius: 3, position: 'relative' }}>
-                          <div style={{ height: '100%', width: `${Math.min(pct,100)}%`, background: pct>85?'#EF4444':'#2563EB', borderRadius: 3, transition: 'width 0.6s ease' }} />
-                          <div style={{ position: 'absolute', top: -4, left: `${Math.min((b.forecast/b.budget)*100,100)}%`, width: 2, height: 12, background: '#F59E0B', borderRadius: 1, transform: 'translateX(-50%)' }} />
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#475569' }}>
-                          <span>{pct.toFixed(1)}% used</span>
-                          <span style={{ color: '#F59E0B' }}>Forecast: {formatShort(b.forecast)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </>
-            )}
-
-            {/* ── SAVINGS PAGE ── */}
-            {activeNav === 'savings' && (
-              <>
-                <div className="page-hdr">
-                  <h2 className="page-title">Savings Plans</h2>
-                  <p className="page-sub">RI and Savings Plans coverage, utilization, and optimization.</p>
-                </div>
-                <div className="kpi-grid-4">
-                  <KPICard label="Coverage" value={`${STATIC_SAVINGS.coverage}%`} sub="of eligible spend" trend={4.2} color="#10B981" delay={0} />
-                  <KPICard label="Utilization" value={`${STATIC_SAVINGS.utilization}%`} sub="of committed" trend={1.8} color="#2563EB" delay={80} />
-                  <KPICard label="Total Saved" value={formatShort(STATIC_SAVINGS.monthly_savings)} sub="This month" trend={18.7} color="#8B5CF6" delay={160} />
-                  <KPICard label="On-Demand Waste" value={formatShort(12400)} sub="Uncovered spend" trend={-8.3} color="#EF4444" delay={240} />
-                </div>
-                <div className="lens-card">
-                  <div className="sec-header"><span className="sec-title">Coverage Over Time</span></div>
-                  <ResponsiveContainer width="100%" height={240}>
-                    <BarChart data={monthlyTrend.map(d => ({ month: d.month, covered: d.total_cost*0.685, uncovered: d.total_cost*0.315 }))}>
-                      <XAxis dataKey="month" />
-                      <YAxis tickFormatter={v => formatShort(v)} />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="covered" name="Covered" fill="#10B981" stackId="a" />
-                      <Bar dataKey="uncovered" name="Uncovered" fill="#EF4444" stackId="a" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </>
-            )}
-
-            {/* ── REPORTS PAGE ── */}
-            {activeNav === 'reports' && (
-              <>
-                <div className="page-hdr">
-                  <h2 className="page-title">Reports</h2>
-                  <p className="page-sub">Generate and export cost intelligence reports.</p>
-                </div>
-                <div className="reports-grid">
-                  {["Monthly Executive Summary","Service Cost Breakdown","Budget vs Actual","Anomaly Report","Savings Opportunities","Tag Compliance"].map((r,i) => (
-                    <div key={i} className="lens-card report-card-item">
-                      <div className="report-icon-lg">▤</div>
-                      <div className="report-card-name">{r}</div>
-                      <div className="report-card-actions">
-                        <button className="report-gen-btn" onClick={exportCSV}>Generate CSV</button>
-                        <button className="report-sched-btn">Schedule</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {/* ── SETTINGS PAGE ── */}
-            {activeNav === 'settings' && (
-              <>
-                <div className="page-hdr">
-                  <h2 className="page-title">Settings</h2>
-                  <p className="page-sub">Configure your account, integrations, and notifications.</p>
-                </div>
-                <div className="grid-2col">
-                  {[
-                    {title:'AWS Integration',sub:'Connect your AWS accounts via IAM role.'},
-                    {title:'Notifications', sub:'Set up cost alert thresholds and email digests.'},
-                    {title:'Budget Alerts', sub:'Configure budget alert percentages.'},
-                    {title:'Team Access', sub:'Manage role-based access control.'}
-                  ].map((s,i) => (
-                    <div key={i} className="lens-card settings-card">
-                      <div className="settings-title">{s.title}</div>
-                      <div className="settings-sub">{s.sub}</div>
-                      <button className="settings-configure-btn">Configure →</button>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-
-          </div>{/* /lens-content */}
-        </div>{/* /lens-main */}
-      </div>
-    </ErrorBoundary>
-  );
-}
-
-// ── Reusable KPI Card ──────────────────────────────────────────────────
-function KPICard({ label, value, sub, trend, color="#2563EB", delay=0 }) {
-  const [visible, setVisible] = useState(false);
-  useEffect(() => { const t = setTimeout(() => setVisible(true), delay); return () => clearTimeout(t); }, [delay]);
-  const isPos = trend > 0;
-  return (
-    <div className={`kpi-card ${visible ? 'kpi-visible' : ''}`} style={{'--kpi-delay': `${delay}ms`,'--kpi-color': color}}>
-      <div className="kpi-glow" />
-      <div className="kpi-top-row">
-        <span className="kpi-label-text">{label}</span>
-        <span className={`kpi-trend-pill ${isPos ? 'trend-up' : 'trend-down'}`}>
-          {isPos ? '↑' : '↓'} {Math.abs(trend).toFixed(1)}%
-        </span>
-      </div>
-      <div className="kpi-value-text">{value}</div>
-      <div className="kpi-sub-text">{sub}</div>
+        {/* ===== OTHER PAGES ===== */}
+        {currentPage === 'analytics' && (
+          <div className="page-content"><h2>Analytics</h2><p className="page-subtitle">Advanced cost analytics and forecasting modules will be available here.</p></div>
+        )}
+        {currentPage === 'reports' && (
+          <div className="page-content"><h2>Reports</h2><p className="page-subtitle">Generate and export custom reports in PDF and CSV formats.</p></div>
+        )}
+        {currentPage === 'settings' && (
+          <div className="page-content"><h2>Settings</h2><p className="page-subtitle">Configure your account, integrations, and notification preferences.</p></div>
+        )}
+      </main>
     </div>
   );
 }
-
-// ── Static budget totals for summary bar ─────────────────────────────
-const BUDGET_TOTAL_BUDGET = 300000;
-const BUDGET_TOTAL_ACTUAL = 268400;
 
 export default App;
