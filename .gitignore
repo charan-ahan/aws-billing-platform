@@ -20,3 +20,4 @@ venv/
 # OS Files
 .DS_Store
 Thumbs.dbapi.txt
+.env.save

@@ -4,6 +4,8 @@ import {
   LineChart, Line, PieChart, Pie, Cell, Legend, ComposedChart, Area, AreaChart
 } from 'recharts';
 import './App.css';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 // ═══════════════════════════════════════════════════════════════
 // MOCK DATA — 3 ACCOUNTS
@@ -346,6 +348,7 @@ function BudgetRow({ name, budget, actual, forecast }) {
 // ═══════════════════════════════════════════════════════════════
 export default function App() {
   const [loaded, setLoaded] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeNav, setActiveNav] = useState('overview');
   const [isDark, setIsDark] = useState(true);
@@ -362,10 +365,24 @@ export default function App() {
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [filterSvcExplorer, setFilterSvcExplorer] = useState('All');
 
-  useEffect(() => { setTimeout(() => setLoaded(true), 80); }, []);
+  // ===== COMPARISON MODE STATE =====
+  const [compareMode, setCompareMode] = useState(false);
+  const [period1Start, setPeriod1Start] = useState('');
+  const [period1End, setPeriod1End] = useState('');
+  const [period2Start, setPeriod2Start] = useState('');
+  const [period2End, setPeriod2End] = useState('');
+
+  useEffect(() => {
+    setTimeout(() => {
+      setLoaded(true);
+      setLoading(false);
+    }, 80);
+  }, []);
+
   useEffect(() => {
     document.documentElement.setAttribute('data-lens-theme', isDark ? 'dark' : 'light');
   }, [isDark]);
+
   useEffect(() => {
     if (!autoRefresh) return;
     const iv = setInterval(() => setLastUpdated(new Date()), 300000);
@@ -469,6 +486,10 @@ export default function App() {
     a.download = 'genmanage_export.csv'; a.click();
   };
 
+  const fetchData = () => {
+    setLastUpdated(new Date());
+  };
+
   const sendAI = () => {
     if (!aiInput.trim()) return;
     const q = aiInput; setAiInput('');
@@ -488,6 +509,41 @@ export default function App() {
   const totalSpent = ACCOUNTS.reduce((sum, a) => sum + a.total_cost, 0);
   const dailyAvg = totalSpent / 30;
   const forecast = totalSpent * 1.08;
+
+  // ── Loading Skeletons ──
+  if (loading) {
+    return (
+      <div className="lens-content" style={{ padding: '22px 26px', display: 'flex', flexDirection: 'column', gap: '18px', maxWidth: '100%', width: '100%' }}>
+        {/* KPI Cards Skeleton */}
+        <div className="kpi-grid-4">
+          {[1,2,3,4].map(i => (
+            <div key={i} className="kpi-card" style={{ padding: '18px', opacity: 1, transform: 'none' }}>
+              <Skeleton height={14} width={100} baseColor={isDark ? '#1E293B' : '#E2E8F0'} highlightColor={isDark ? '#334155' : '#F1F5F9'} />
+              <Skeleton height={28} width={120} style={{ marginTop: 8 }} baseColor={isDark ? '#1E293B' : '#E2E8F0'} highlightColor={isDark ? '#334155' : '#F1F5F9'} />
+              <Skeleton height={12} width={80} style={{ marginTop: 4 }} baseColor={isDark ? '#1E293B' : '#E2E8F0'} highlightColor={isDark ? '#334155' : '#F1F5F9'} />
+              <Skeleton height={30} style={{ marginTop: 10 }} baseColor={isDark ? '#1E293B' : '#E2E8F0'} highlightColor={isDark ? '#334155' : '#F1F5F9'} />
+            </div>
+          ))}
+        </div>
+
+        {/* Main Chart Skeleton */}
+        <div className="lens-card">
+          <Skeleton height={20} width={150} baseColor={isDark ? '#1E293B' : '#E2E8F0'} highlightColor={isDark ? '#334155' : '#F1F5F9'} />
+          <Skeleton height={200} style={{ marginTop: 12 }} baseColor={isDark ? '#1E293B' : '#E2E8F0'} highlightColor={isDark ? '#334155' : '#F1F5F9'} />
+        </div>
+
+        {/* Two-Column Skeletons */}
+        <div className="grid-2col">
+          <div className="lens-card">
+            <Skeleton height={180} baseColor={isDark ? '#1E293B' : '#E2E8F0'} highlightColor={isDark ? '#334155' : '#F1F5F9'} />
+          </div>
+          <div className="lens-card">
+            <Skeleton height={180} baseColor={isDark ? '#1E293B' : '#E2E8F0'} highlightColor={isDark ? '#334155' : '#F1F5F9'} />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`lens-app ${loaded ? 'lens-loaded' : ''} ${isDark ? 'lens-dark' : 'lens-light'} ${sidebarOpen ? 'sidebar-is-open' : ''}`}>
@@ -558,7 +614,9 @@ export default function App() {
             <div className="topbar-meta">
               <span>🕐</span>
               <span>{lastUpdated.toLocaleTimeString()}</span>
-              <button className="refresh-icon-btn" onClick={() => setLastUpdated(new Date())} title="Refresh">↺</button>
+              <button className="refresh-icon-btn" onClick={() => {
+                setLastUpdated(new Date());
+              }} title="Refresh">↺</button>
               <label className="auto-label">
                 <input type="checkbox" checked={autoRefresh} onChange={e => setAutoRefresh(e.target.checked)}/>
                 Auto
@@ -609,8 +667,17 @@ export default function App() {
                     <label>To</label>
                     <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="lens-select"/>
                   </div>
-                  <button className="filter-apply-btn">Apply</button>
-                  <button className="filter-reset-btn" onClick={() => {setSelectedAccount('all');setFilterSvc('all');setFilterRegion('all');setStartDate('');setEndDate('');}}>Reset</button>
+                  <button className="filter-apply-btn" onClick={() => {
+                    fetchData();
+                  }}>Apply</button>
+                  <button className="filter-reset-btn" onClick={() => {
+                    setSelectedAccount('all');
+                    setFilterSvc('all');
+                    setFilterRegion('all');
+                    setStartDate('');
+                    setEndDate('');
+                    fetchData();
+                  }}>Reset</button>
                 </div>
               </div>
 
@@ -632,6 +699,32 @@ export default function App() {
                     </button>
                   ))}
                 </div>
+
+                {/* === COMPARISON MODE UI === */}
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '12px 0 8px', fontSize: '13px', color: '#94A3B8' }}>
+                  <input type="checkbox" checked={compareMode} onChange={() => setCompareMode(!compareMode)} />
+                  Enable Comparison
+                </label>
+
+                {compareMode && (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                    <div className="filter-group" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                      <label style={{ fontSize: '11px', fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase' }}>Period 1</label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input type="date" value={period1Start} onChange={e => setPeriod1Start(e.target.value)} className="lens-select" style={{ flex: 1 }} />
+                        <input type="date" value={period1End} onChange={e => setPeriod1End(e.target.value)} className="lens-select" style={{ flex: 1 }} />
+                      </div>
+                    </div>
+                    <div className="filter-group" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                      <label style={{ fontSize: '11px', fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase' }}>Period 2</label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input type="date" value={period2Start} onChange={e => setPeriod2Start(e.target.value)} className="lens-select" style={{ flex: 1 }} />
+                        <input type="date" value={period2End} onChange={e => setPeriod2End(e.target.value)} className="lens-select" style={{ flex: 1 }} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <ResponsiveContainer width="100%" height={240}>
                   <ComposedChart data={trendData} margin={{top:4,right:4,left:0,bottom:0}}>
                     <defs>
@@ -647,6 +740,47 @@ export default function App() {
                     <Area type="monotone" dataKey={costKey} name="Actual" stroke="#2563EB" fill="url(#trendGrad)" strokeWidth={2}/>
                   </ComposedChart>
                 </ResponsiveContainer>
+
+                {/* === COMPARISON RESULTS === */}
+                {compareMode && (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginTop: '16px', padding: '16px', background: 'rgba(13,21,37,0.5)', borderRadius: '8px' }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '11px', color: '#94A3B8' }}>Period 1</div>
+                      <div style={{ fontSize: '18px', fontWeight: '700', fontFamily: 'monospace' }}>$12,400</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '11px', color: '#94A3B8' }}>Period 2</div>
+                      <div style={{ fontSize: '18px', fontWeight: '700', fontFamily: 'monospace' }}>$14,200</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '11px', color: '#94A3B8' }}>Difference</div>
+                      <div style={{ fontSize: '18px', fontWeight: '700', fontFamily: 'monospace', color: '#22c55e' }}>+14.5%</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* === FORECAST CHART === */}
+                <div style={{ marginTop: '20px' }}>
+                  <SectionHeader title="Cost Forecast" badge="Next 6 months" />
+                  <ResponsiveContainer width="100%" height={200}>
+                    <LineChart data={[
+                      { month: 'Jul', actual: 134200, forecast: 142000 },
+                      { month: 'Aug', actual: 141000, forecast: 148000 },
+                      { month: 'Sep', actual: null, forecast: 155000 },
+                      { month: 'Oct', actual: null, forecast: 162000 },
+                      { month: 'Nov', actual: null, forecast: 168000 },
+                      { month: 'Dec', actual: null, forecast: 175000 }
+                    ]}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94A3B8' }} />
+                      <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} tickFormatter={v => fmtK(v)} />
+                      <Tooltip content={<DarkTooltip />} />
+                      <Line type="monotone" dataKey="actual" stroke="#2563EB" strokeWidth={2} dot={{ r: 3 }} />
+                      <Line type="monotone" dataKey="forecast" stroke="#8B5CF6" strokeWidth={2} strokeDasharray="6 3" dot={{ r: 3 }} />
+                      <Legend formatter={v => <span style={{ fontSize: 11, color: '#94A3B8' }}>{v}</span>} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
 
               {/* 2-col: Services + Regions (filtered) */}
@@ -791,8 +925,14 @@ export default function App() {
                     <label>To</label>
                     <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="lens-select"/>
                   </div>
-                  <button className="filter-apply-btn">Apply</button>
-                  <button className="filter-reset-btn" onClick={() => {setSelectedAccount('all');setFilterSvc('all');setFilterRegion('all');setStartDate('');setEndDate('');}}>Reset</button>
+                  <button className="filter-apply-btn" onClick={() => {}}>Apply</button>
+                  <button className="filter-reset-btn" onClick={() => {
+                    setSelectedAccount('all');
+                    setFilterSvc('all');
+                    setFilterRegion('all');
+                    setStartDate('');
+                    setEndDate('');
+                  }}>Reset</button>
                 </div>
               </div>
 
@@ -973,6 +1113,28 @@ export default function App() {
               ].map((b,i) => (
                 <div key={i} className="lens-card"><BudgetRow {...b}/></div>
               ))}
+
+              {/* Budget Alerts */}
+              <div className="lens-card" style={{ marginTop: '16px', borderLeft: '4px solid #F59E0B' }}>
+                <SectionHeader title="Budget Alerts" badge="2 active" />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'rgba(245,158,11,0.08)', borderRadius: '8px', borderLeft: '3px solid #F59E0B' }}>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '14px' }}>⚠️ Budget Warning</div>
+                      <div style={{ fontSize: '13px', color: '#94A3B8' }}>Compute budget is at 85% of allocated $120,000</div>
+                    </div>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#F59E0B' }}>$102,000 / $120,000</div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'rgba(239,68,68,0.08)', borderRadius: '8px', borderLeft: '3px solid #EF4444' }}>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '14px' }}>🚨 Budget Exceeded</div>
+                      <div style={{ fontSize: '13px', color: '#94A3B8' }}>Total Cloud budget exceeded by 4.8%</div>
+                    </div>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#EF4444' }}>$314,200 / $300,000</div>
+                  </div>
+                </div>
+              </div>
+
               <div className="lens-card">
                 <SectionHeader title="Budget vs Actual — Monthly"/>
                 <ResponsiveContainer width="100%" height={240}>
@@ -1093,6 +1255,7 @@ export default function App() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

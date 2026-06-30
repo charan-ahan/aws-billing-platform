@@ -13,8 +13,8 @@
     "jspdf": "^4.2.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "react-loading-skeleton": "^3.5.0",
     "react-scripts": "4.0.1",
-    "react-toastify": "^11.1.0",
     "recharts": "^2.7.0",
     "victory": "^37.3.6",
     "web-vitals": "^2.1.4"

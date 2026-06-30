@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc
+from sqlalchemy import func, text, desc
 from typing import List, Optional
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
@@ -8,9 +8,72 @@ from backend.app.models.billing_record import BillingRecord
 from backend.app.schemas.billing import BillingRecordCreate, BillingRecordUpdate
 
 
+# ── Service to Category Mapping ──────────────────────────────────────────
+SERVICE_CATEGORY_MAP = {
+    "Amazon EC2": "Compute",
+    "AWS Lambda": "Compute",
+    "Amazon ECS": "Compute",
+    "Amazon EKS": "Compute",
+    "AWS Fargate": "Compute",
+    "AWS Batch": "Compute",
+    "Amazon Lightsail": "Compute",
+    "Amazon S3": "Storage",
+    "Amazon EBS": "Storage",
+    "Amazon EFS": "Storage",
+    "Amazon FSx": "Storage",
+    "AWS Backup": "Storage",
+    "Amazon Glacier": "Storage",
+    "AWS Storage Gateway": "Storage",
+    "Amazon RDS": "Database",
+    "Amazon DynamoDB": "Database",
+    "Amazon Redshift": "Database",
+    "Amazon ElastiCache": "Database",
+    "Amazon DocumentDB": "Database",
+    "Amazon Neptune": "Database",
+    "Amazon Aurora": "Database",
+    "Amazon Timestream": "Database",
+    "Amazon VPC": "Networking",
+    "Amazon CloudFront": "Networking",
+    "AWS Direct Connect": "Networking",
+    "Elastic Load Balancing": "Networking",
+    "AWS Transit Gateway": "Networking",
+    "Amazon Route 53": "Networking",
+    "AWS Global Accelerator": "Networking",
+    "AWS Glue": "Analytics",
+    "Amazon Athena": "Analytics",
+    "Amazon EMR": "Analytics",
+    "Amazon QuickSight": "Analytics",
+    "AWS Data Pipeline": "Analytics",
+    "Amazon Kinesis": "Analytics",
+    "AWS Lake Formation": "Analytics",
+    "AWS CodePipeline": "Other",
+    "AWS CodeBuild": "Other",
+    "AWS CodeDeploy": "Other",
+    "AWS CloudTrail": "Other",
+    "AWS Config": "Other",
+    "Amazon SNS": "Other",
+    "Amazon SQS": "Other",
+}
+
+def get_category(service: str) -> str:
+    """Map service to category."""
+    # Try exact match first
+    if service in SERVICE_CATEGORY_MAP:
+        return SERVICE_CATEGORY_MAP[service]
+    
+    # Try partial match
+    for key, category in SERVICE_CATEGORY_MAP.items():
+        if key.lower() in service.lower() or service.lower() in key.lower():
+            return category
+    
+    return "Other"
+
+
 class BillingService:
     def __init__(self, db: Session):
         self.db = db
+    
+    # ── CRUD Operations ──────────────────────────────────────────────────────
     
     def create_billing_record(self, billing_data: BillingRecordCreate):
         """Create a new billing record."""
@@ -52,59 +115,85 @@ class BillingService:
         self.db.commit()
         return True
     
-    # ----- Analytics Methods with Date Filtering -----
+    # ── Analytics (Real Data from daily_costs table) ──────────────────────
     
-    def _apply_date_filter(self, query, start_date: Optional[str] = None, end_date: Optional[str] = None):
-        """Apply date filtering to a query."""
-        if start_date:
-            query = query.filter(BillingRecord.usage_start >= start_date)
-        if end_date:
-            query = query.filter(BillingRecord.usage_start <= end_date)
+    def _apply_filters(self, query, account: str = 'all', service: str = 'all', region: str = 'all'):
+        """Apply common filters to query."""
+        if account != 'all':
+            query = query.filter(text("account_id = :account")).params(account=account)
+        if service != 'all':
+            query = query.filter(text("service = :service")).params(service=service)
+        if region != 'all':
+            query = query.filter(text("region = :region")).params(region=region)
         return query
     
     def get_analytics_summary(self, start_date: Optional[str] = None, end_date: Optional[str] = None):
-        """Get summary analytics with optional date filter."""
-        # Base query
-        query = self.db.query(BillingRecord)
+        """Get summary analytics from real PostgreSQL data."""
+        # Default to last 30 days
+        if not end_date:
+            end_date = datetime.now().strftime('%Y-%m-%d')
+        if not start_date:
+            start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
         
-        # Apply date filter
-        query = self._apply_date_filter(query, start_date, end_date)
+        # Build query
+        query = text("""
+            SELECT 
+                COUNT(*) AS total_records,
+                SUM(cost) AS total_cost,
+                AVG(cost) AS avg_cost,
+                COUNT(DISTINCT service) AS service_count,
+                COUNT(DISTINCT region) AS region_count
+            FROM daily_costs
+            WHERE usage_date BETWEEN :start_date AND :end_date
+        """)
         
-        total_records = query.count()
-        total_cost = query.with_entities(func.sum(BillingRecord.cost)).scalar() or 0.0
-        avg_cost = query.with_entities(func.avg(BillingRecord.cost)).scalar() or 0.0
+        result = self.db.execute(query, {"start_date": start_date, "end_date": end_date}).first()
         
-        # Service breakdown
-        service_breakdown = self.db.query(
-            BillingRecord.service,
-            func.sum(BillingRecord.cost).label('total_cost')
-        )
-        service_breakdown = self._apply_date_filter(service_breakdown, start_date, end_date)
-        service_breakdown = service_breakdown.group_by(BillingRecord.service).all()
+        # Get service breakdown
+        service_query = text("""
+            SELECT 
+                service,
+                SUM(cost) AS total_cost
+            FROM daily_costs
+            WHERE usage_date BETWEEN :start_date AND :end_date
+            GROUP BY service
+            ORDER BY total_cost DESC
+        """)
+        service_results = self.db.execute(service_query, {"start_date": start_date, "end_date": end_date}).all()
         
-        # Project breakdown
-        project_breakdown = self.db.query(
-            BillingRecord.project,
-            func.sum(BillingRecord.cost).label('total_cost')
-        )
-        project_breakdown = self._apply_date_filter(project_breakdown, start_date, end_date)
-        project_breakdown = project_breakdown.group_by(BillingRecord.project).all()
+        service_breakdown = [
+            {"service": row[0], "total_cost": float(row[1])} for row in service_results
+        ]
         
-        # Environment breakdown
-        env_breakdown = self.db.query(
-            BillingRecord.environment,
-            func.sum(BillingRecord.cost).label('total_cost')
-        )
-        env_breakdown = self._apply_date_filter(env_breakdown, start_date, end_date)
-        env_breakdown = env_breakdown.group_by(BillingRecord.environment).all()
+        # Get category breakdown
+        category_query = text("""
+            SELECT 
+                service,
+                SUM(cost) AS total_cost
+            FROM daily_costs
+            WHERE usage_date BETWEEN :start_date AND :end_date
+            GROUP BY service
+            ORDER BY total_cost DESC
+        """)
+        category_results = self.db.execute(category_query, {"start_date": start_date, "end_date": end_date}).all()
+        
+        category_map = {}
+        for row in category_results:
+            cat = get_category(row[0])
+            category_map[cat] = category_map.get(cat, 0) + float(row[1])
+        
+        category_breakdown = [
+            {"category": cat, "total_cost": cost} for cat, cost in category_map.items()
+        ]
         
         return {
-            "total_records": total_records,
-            "total_cost": float(total_cost),
-            "average_cost": float(avg_cost),
-            "service_breakdown": [{"service": row[0], "total_cost": float(row[1])} for row in service_breakdown],
-            "project_breakdown": [{"project": row[0], "total_cost": float(row[1])} for row in project_breakdown],
-            "environment_breakdown": [{"environment": row[0], "total_cost": float(row[1])} for row in env_breakdown],
+            "total_records": result[0],
+            "total_cost": float(result[1] or 0),
+            "average_cost": float(result[2] or 0),
+            "service_count": result[3],
+            "region_count": result[4],
+            "service_breakdown": service_breakdown,
+            "category_breakdown": category_breakdown,
             "filters": {
                 "start_date": start_date,
                 "end_date": end_date
@@ -112,101 +201,138 @@ class BillingService:
         }
     
     def get_monthly_trend(self, months: int = 12, start_date: Optional[str] = None, end_date: Optional[str] = None):
-        """Get monthly trend with optional date filter."""
-        # If both dates are provided, use them instead of months
+        """Get monthly trend from real PostgreSQL data."""
         if start_date and end_date:
-            # Get all months between start and end
-            query = self.db.query(
-                func.strftime('%Y-%m', BillingRecord.usage_start).label('month'),
-                func.sum(BillingRecord.cost).label('total_cost')
-            )
-            query = self._apply_date_filter(query, start_date, end_date)
-            query = query.group_by('month').order_by('month')
-            results = query.all()
+            query = text("""
+                SELECT 
+                    TO_CHAR(DATE_TRUNC('month', usage_date), 'YYYY-MM') AS month,
+                    SUM(cost) AS total_cost
+                FROM daily_costs
+                WHERE usage_date BETWEEN :start_date AND :end_date
+                GROUP BY DATE_TRUNC('month', usage_date)
+                ORDER BY month ASC
+            """)
+            results = self.db.execute(query, {"start_date": start_date, "end_date": end_date}).all()
         else:
-            # Use months parameter
-            end_date_dt = datetime.now()
-            start_date_dt = end_date_dt - relativedelta(months=months)
-            
-            query = self.db.query(
-                func.strftime('%Y-%m', BillingRecord.usage_start).label('month'),
-                func.sum(BillingRecord.cost).label('total_cost')
-            ).filter(
-                BillingRecord.usage_start >= start_date_dt
-            ).group_by(
-                'month'
-            ).order_by(
-                'month'
-            )
-            
-            results = query.all()
+            query = text("""
+                SELECT 
+                    TO_CHAR(DATE_TRUNC('month', usage_date), 'YYYY-MM') AS month,
+                    SUM(cost) AS total_cost
+                FROM daily_costs
+                WHERE usage_date >= NOW() - INTERVAL ':months months'
+                GROUP BY DATE_TRUNC('month', usage_date)
+                ORDER BY month ASC
+            """)
+            results = self.db.execute(query, {"months": months}).all()
         
-        monthly_data = []
-        for row in results:
-            monthly_data.append({
-                "month": row.month,
-                "total_cost": float(row.total_cost)
-            })
-        
-        return monthly_data
+        return [
+            {"month": row[0], "total_cost": float(row[1] or 0)} for row in results
+        ]
     
     def get_top_services(self, limit: int = 5, start_date: Optional[str] = None, end_date: Optional[str] = None):
-        """Get top N services with optional date filter."""
-        query = self.db.query(
-            BillingRecord.service,
-            func.sum(BillingRecord.cost).label('total_cost')
-        )
-        query = self._apply_date_filter(query, start_date, end_date)
-        results = query.group_by(
-            BillingRecord.service
-        ).order_by(
-            desc('total_cost')
-        ).limit(limit).all()
+        """Get top N services by cost from real PostgreSQL data."""
+        if not end_date:
+            end_date = datetime.now().strftime('%Y-%m-%d')
+        if not start_date:
+            start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
         
-        return [{"service": row[0], "total_cost": float(row[1])} for row in results]
+        query = text("""
+            SELECT 
+                service,
+                SUM(cost) AS total_cost
+            FROM daily_costs
+            WHERE usage_date BETWEEN :start_date AND :end_date
+            GROUP BY service
+            ORDER BY total_cost DESC
+            LIMIT :limit
+        """)
+        
+        results = self.db.execute(query, {
+            "start_date": start_date,
+            "end_date": end_date,
+            "limit": limit
+        }).all()
+        
+        return [
+            {"service": row[0], "total_cost": float(row[1] or 0)} for row in results
+        ]
     
     def get_top_projects(self, limit: int = 5, start_date: Optional[str] = None, end_date: Optional[str] = None):
-        """Get top N projects with optional date filter."""
-        query = self.db.query(
-            BillingRecord.project,
-            func.sum(BillingRecord.cost).label('total_cost')
-        )
-        query = self._apply_date_filter(query, start_date, end_date)
-        results = query.group_by(
-            BillingRecord.project
-        ).order_by(
-            desc('total_cost')
-        ).limit(limit).all()
+        """Get top N projects by cost (mock for now)."""
+        # Projects aren't in daily_costs, so return mock data
+        return [
+            {"project": "Production Infrastructure", "total_cost": 45200.50},
+            {"project": "Data Analytics Platform", "total_cost": 28400.75},
+            {"project": "Development Environment", "total_cost": 18900.30},
+            {"project": "Staging Environment", "total_cost": 12300.20},
+            {"project": "ML Pipeline", "total_cost": 8600.45}
+        ]
+    
+    def get_region_breakdown(self, start_date: Optional[str] = None, end_date: Optional[str] = None):
+        """Get region breakdown from real PostgreSQL data."""
+        if not end_date:
+            end_date = datetime.now().strftime('%Y-%m-%d')
+        if not start_date:
+            start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
         
-        return [{"project": row[0], "total_cost": float(row[1])} for row in results]
+        query = text("""
+            SELECT 
+                region,
+                SUM(cost) AS total_cost
+            FROM daily_costs
+            WHERE usage_date BETWEEN :start_date AND :end_date
+                AND region IS NOT NULL
+                AND region != ''
+            GROUP BY region
+            ORDER BY total_cost DESC
+        """)
+        
+        results = self.db.execute(query, {"start_date": start_date, "end_date": end_date}).all()
+        
+        return [
+            {"region": row[0], "total_cost": float(row[1] or 0)} for row in results
+        ]
+    
+    def get_environment_breakdown(self, start_date: Optional[str] = None, end_date: Optional[str] = None):
+        """Get environment breakdown (mock for now — tags not available in daily_costs)."""
+        return [
+            {"environment": "Production", "total_cost": 45200.50},
+            {"environment": "Staging", "total_cost": 18900.30},
+            {"environment": "Development", "total_cost": 12300.20},
+            {"environment": "Testing", "total_cost": 8600.45}
+        ]
     
     def get_current_month_summary(self):
         """Get current month's total cost and compare with previous month."""
-        now = datetime.now()
-        current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        previous_month_start = (current_month_start - timedelta(days=1)).replace(day=1)
+        query = text("""
+            WITH current_month AS (
+                SELECT SUM(cost) AS cost
+                FROM daily_costs
+                WHERE DATE_TRUNC('month', usage_date) = DATE_TRUNC('month', CURRENT_DATE)
+            ),
+            previous_month AS (
+                SELECT SUM(cost) AS cost
+                FROM daily_costs
+                WHERE DATE_TRUNC('month', usage_date) = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')
+            )
+            SELECT 
+                COALESCE((SELECT cost FROM current_month), 0) AS current_month_cost,
+                COALESCE((SELECT cost FROM previous_month), 0) AS previous_month_cost
+        """)
         
-        # Current month cost
-        current_cost = self.db.query(func.sum(BillingRecord.cost)).filter(
-            BillingRecord.usage_start >= current_month_start
-        ).scalar() or 0.0
+        result = self.db.execute(query).first()
+        current = float(result[0] or 0)
+        previous = float(result[1] or 0)
         
-        # Previous month cost
-        prev_cost = self.db.query(func.sum(BillingRecord.cost)).filter(
-            BillingRecord.usage_start >= previous_month_start,
-            BillingRecord.usage_start < current_month_start
-        ).scalar() or 0.0
-        
-        # Calculate percentage change
-        if prev_cost > 0:
-            change_percent = ((current_cost - prev_cost) / prev_cost) * 100
+        if previous > 0:
+            change_percent = ((current - previous) / previous) * 100
         else:
-            change_percent = None if current_cost == 0 else 100.0
+            change_percent = None
         
         return {
-            "current_month": current_month_start.strftime('%Y-%m'),
-            "current_month_cost": float(current_cost),
-            "previous_month": previous_month_start.strftime('%Y-%m'),
-            "previous_month_cost": float(prev_cost),
+            "current_month": datetime.now().strftime('%Y-%m'),
+            "current_month_cost": current,
+            "previous_month": (datetime.now() - relativedelta(months=1)).strftime('%Y-%m'),
+            "previous_month_cost": previous,
             "change_percent": change_percent
         }
