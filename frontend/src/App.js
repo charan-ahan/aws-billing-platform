@@ -6,6 +6,7 @@ import {
 import './App.css';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
+import axios from 'axios';
 
 // ═══════════════════════════════════════════════════════════════
 // MOCK DATA — 3 ACCOUNTS
@@ -15,6 +16,11 @@ const ACCOUNTS = [
   { id: "prod-secondary", label: "Production Secondary", total_cost: 80520.23 },
   { id: "staging", label: "Staging", total_cost: 53680.14 }
 ];
+const [summary, setSummary] = useState(null);
+const [monthlyTrend, setMonthlyTrend] = useState([]);
+const [topServices, setTopServices] = useState([]);
+const [regionBreakdown, setRegionBreakdown] = useState([]);
+const [currentMonth, setCurrentMonth] = useState(null);
 
 const SERVICE_DATA = [
   { service: "Amazon EC2", prod_main: 44710.25, prod_sec: 26826.15, staging: 17884.10 },
