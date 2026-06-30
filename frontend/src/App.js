@@ -14,7 +14,7 @@ const API_BASE_URL = 'https://aws-billing-platform.onrender.com';
 // ── Color Palette ──────────────────────────────────────────────────────
 const COLORS = ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe', '#e0e7ff'];
 const PIE_COLORS = ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe'];
-
+const formatCurrency = (v) => `$${Number(v).toFixed(2)}`;
 // ── Main App ──────────────────────────────────────────────────────────
 function App() {
   // ── State ────────────────────────────────────────────────────────────
@@ -394,7 +394,7 @@ const DarkTooltip = ({ active, payload, label }) => {
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: p.color, display: 'inline-block' }} />
           <span style={{ color: '#94A3B8' }}>{p.name}:</span>
           <span style={{ fontFamily: 'monospace', fontWeight: 700, color: p.color }}>
-            {formatCurrency(p.value)}
+            ${Number(p.value).toFixed(2)}
           </span>
         </div>
       ))}
