@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  ComposedChart, Area, Cell
+  LineChart, Line, PieChart, Pie, Cell, Legend, ComposedChart, Area
 } from 'recharts';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
@@ -75,9 +75,12 @@ class ErrorBoundary extends React.Component {
 
 // ── Main App ──────────────────────────────────────────────────────────
 function App() {
+  const [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [isDark, setIsDark] = useState(false);
+  const [activeNav, setActiveNav] = useState('overview');
+  const [isDark, setIsDark] = useState(true);
+  const [timeGrain, setTimeGrain] = useState('monthly');
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [autoRefresh, setAutoRefresh] = useState(false);
 
@@ -88,14 +91,13 @@ function App() {
   const [regionBreakdown, setRegionBreakdown] = useState([]);
   const [currentMonth, setCurrentMonth] = useState(null);
 
-  // ── Filter states ────────────────────────────────────────────────────
+  // ── Filters ──────────────────────────────────────────────────────────
   const [filters, setFilters] = useState({
-    timeGrain: 'monthly',
     startDate: '',
     endDate: ''
   });
 
-  // ── Fetch Data ──────────────────────────────────────────────────────
+  // ── Fetch real data ──────────────────────────────────────────────────
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -126,6 +128,7 @@ function App() {
 
   useEffect(() => {
     fetchData();
+    setTimeout(() => setLoaded(true), 100);
   }, []);
 
   useEffect(() => {
@@ -135,13 +138,12 @@ function App() {
   }, [autoRefresh]);
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-lens-theme', isDark ? 'dark' : 'light');
   }, [isDark]);
 
-  const handleFilterChange = (key, value) => setFilters(prev => ({ ...prev, [key]: value }));
   const applyFilters = () => fetchData();
   const resetFilters = () => {
-    setFilters({ timeGrain: 'monthly', startDate: '', endDate: '' });
+    setFilters({ startDate: '', endDate: '' });
     fetchData();
   };
   const exportCSV = () => alert('CSV export coming soon');
@@ -175,7 +177,12 @@ function App() {
   // ── Main Render ──────────────────────────────────────────────────────
   return (
     <ErrorBoundary>
-      <div className={`lens-app ${isDark ? 'lens-dark' : 'lens-light'} ${sidebarOpen ? 'sidebar-is-open' : ''}`}>
+      <div className={`lens-app ${loaded ? 'lens-loaded' : ''} ${isDark ? 'lens-dark' : 'lens-light'} ${sidebarOpen ? 'sidebar-is-open' : ''}`}>
+
+        {/* ── Aurora ── */}
+        <div className="lens-aurora" aria-hidden>
+          <div className="aurora-blob a1"/><div className="aurora-blob a2"/><div className="aurora-blob a3"/>
+        </div>
 
         {/* ── Sidebar ── */}
         <aside className={`lens-sidebar ${sidebarOpen ? 'sb-open' : 'sb-closed'}`}>
@@ -183,25 +190,25 @@ function App() {
             <div className="sb-logo-mark">◈</div>
             {sidebarOpen && (
               <div className="sb-logo-text">
-                <span className="sb-logo-name">FinOps</span>
-                <span className="sb-logo-sub">GenManage</span>
+                <span className="sb-logo-name">GenManage</span>
+                <span className="sb-logo-sub">Lens Analytics</span>
               </div>
             )}
           </div>
           <nav className="sb-nav">
-            <button className="sb-nav-item sb-active">
-              <span className="sb-nav-icon">📊</span>
-              {sidebarOpen && <span className="sb-nav-label">Dashboard</span>}
+            <button className={`sb-nav-item ${activeNav === 'overview' ? 'sb-active' : ''}`} onClick={() => setActiveNav('overview')}>
+              <span className="sb-nav-icon">◈</span>
+              {sidebarOpen && <span className="sb-nav-label">Overview</span>}
             </button>
-            <button className="sb-nav-item">
+            <button className={`sb-nav-item ${activeNav === 'explorer' ? 'sb-active' : ''}`} onClick={() => setActiveNav('explorer')}>
               <span className="sb-nav-icon">◎</span>
               {sidebarOpen && <span className="sb-nav-label">Explorer</span>}
             </button>
-            <button className="sb-nav-item">
+            <button className={`sb-nav-item ${activeNav === 'reports' ? 'sb-active' : ''}`} onClick={() => setActiveNav('reports')}>
               <span className="sb-nav-icon">▤</span>
               {sidebarOpen && <span className="sb-nav-label">Reports</span>}
             </button>
-            <button className="sb-nav-item">
+            <button className={`sb-nav-item ${activeNav === 'settings' ? 'sb-active' : ''}`} onClick={() => setActiveNav('settings')}>
               <span className="sb-nav-icon">⚙</span>
               {sidebarOpen && <span className="sb-nav-label">Settings</span>}
             </button>
@@ -216,6 +223,7 @@ function App() {
 
         {/* ── Main Content ── */}
         <div className="lens-main">
+
           {/* Topbar */}
           <header className="lens-topbar">
             <button className="topbar-hamburger" onClick={() => setSidebarOpen(!sidebarOpen)}>
@@ -224,7 +232,9 @@ function App() {
             <div className="topbar-breadcrumb">
               <span className="bc-root">Lens</span>
               <span className="bc-sep">›</span>
-              <span className="bc-cur">Dashboard</span>
+              <span className="bc-cur">
+                {activeNav.charAt(0).toUpperCase() + activeNav.slice(1)}
+              </span>
             </div>
             <div className="topbar-right">
               <div className="topbar-meta">
@@ -249,7 +259,7 @@ function App() {
               <div className="filter-bar-inner">
                 <div className="filter-group">
                   <label>Time Grain</label>
-                  <select className="lens-select" value={filters.timeGrain} onChange={e => handleFilterChange('timeGrain', e.target.value)}>
+                  <select className="lens-select" value={timeGrain} onChange={e => setTimeGrain(e.target.value)}>
                     <option value="monthly">Monthly</option>
                     <option value="daily">Daily</option>
                     <option value="hourly">Hourly</option>
@@ -257,11 +267,11 @@ function App() {
                 </div>
                 <div className="filter-group">
                   <label>From</label>
-                  <input type="date" className="lens-select" value={filters.startDate} onChange={e => handleFilterChange('startDate', e.target.value)} />
+                  <input type="date" className="lens-select" value={filters.startDate} onChange={e => setFilters({...filters, startDate: e.target.value})} />
                 </div>
                 <div className="filter-group">
                   <label>To</label>
-                  <input type="date" className="lens-select" value={filters.endDate} onChange={e => handleFilterChange('endDate', e.target.value)} />
+                  <input type="date" className="lens-select" value={filters.endDate} onChange={e => setFilters({...filters, endDate: e.target.value})} />
                 </div>
                 <button className="filter-apply-btn" onClick={applyFilters}>Apply</button>
                 <button className="filter-reset-btn" onClick={resetFilters}>Reset</button>
@@ -315,6 +325,13 @@ function App() {
                 <span className="sec-title">Cost Trend</span>
                 <span className="sec-badge">Live</span>
               </div>
+              <div className="view-toggle-row">
+                {['hourly','daily','monthly'].map(v => (
+                  <button key={v} className={`view-toggle-btn ${timeGrain===v?'vt-active':''}`} onClick={() => setTimeGrain(v)}>
+                    {v.charAt(0).toUpperCase()+v.slice(1)}
+                  </button>
+                ))}
+              </div>
               <ResponsiveContainer width="100%" height={260}>
                 <ComposedChart data={monthlyTrend}>
                   <defs>
@@ -332,7 +349,7 @@ function App() {
               </ResponsiveContainer>
             </div>
 
-            {/* ── Two columns: Services & Regions ── */}
+            {/* ── Services & Regions ── */}
             <div className="grid-2col">
               <div className="lens-card">
                 <div className="sec-header">
