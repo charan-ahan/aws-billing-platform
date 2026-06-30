@@ -485,11 +485,37 @@ export default function App() {
     a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
     a.download = 'genmanage_export.csv'; a.click();
   };
+const API_BASE_URL = 'https://aws-billing-platform.onrender.com';
 
-  const fetchData = () => {
+const fetchData = async () => {
+  setLoading(true);
+  try {
+    // Fetch all data from the real backend
+    const [summaryRes, monthlyRes, servicesRes, regionRes, currentMonthRes] = await Promise.all([
+      axios.get(`${API_BASE_URL}/billing/analytics/summary`),
+      axios.get(`${API_BASE_URL}/billing/analytics/monthly-trend`),
+      axios.get(`${API_BASE_URL}/billing/analytics/top-services?limit=5`),
+      axios.get(`${API_BASE_URL}/billing/analytics/region-breakdown`),
+      axios.get(`${API_BASE_URL}/billing/analytics/current-month`)
+    ]);
+
+    setSummary(summaryRes.data);
+    setMonthlyTrend(monthlyRes.data);
+    setTopServices(servicesRes.data);
+    setRegionBreakdown(regionRes.data);
+    setCurrentMonth(currentMonthRes.data);
     setLastUpdated(new Date());
-  };
-
+  } catch (error) {
+    console.error('Error fetching real data:', error);
+    // Fallback to mock data if API fails
+    setSummary(MOCK_DATA.summary);
+    setMonthlyTrend(MOCK_DATA.monthly_trend);
+    setTopServices(MOCK_DATA.top_services);
+    setRegionBreakdown(MOCK_DATA.region_breakdown);
+    setCurrentMonth(MOCK_DATA.current_month);
+  }
+  setLoading(false);
+};
   const sendAI = () => {
     if (!aiInput.trim()) return;
     const q = aiInput; setAiInput('');
