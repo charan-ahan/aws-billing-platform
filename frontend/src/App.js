@@ -445,7 +445,7 @@ function App() {
                   </div>
                 </div>
 
-                {/* Environment Breakdown & Data Transfer (static) */}
+                {/* Environment Breakdown & Data Transfer */}
                 <div className="grid-2col">
                   <div className="lens-card">
                     <div className="sec-header">
