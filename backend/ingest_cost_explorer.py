@@ -54,17 +54,17 @@ def fetch_cost_data(start_date, end_date):
     Fetch daily cost grouped by service and region.
     """
     response = ce_client.get_cost_and_usage(
-        TimePeriod={
-            'Start': start_date,
-            'End': end_date
-        },
-        Granularity='DAILY',
-        Metrics=['UnblendedCost'],
-        GroupBy=[
-            {'Type': 'DIMENSION', 'Key': 'SERVICE'},
-            {'Type': 'DIMENSION', 'Key': 'REGION'}
-        ]
-    )
+    TimePeriod={
+        'Start': start_date,
+        'End': end_date
+    },
+    Granularity='DAILY',
+    Metrics=['UnblendedCost'],
+    GroupBy=[
+        {'Type': 'DIMENSION', 'Key': 'SERVICE'},
+        {'Type': 'DIMENSION', 'Key': 'REGION'}
+    ]
+)
 
     records = []
     for day in response['ResultsByTime']:
