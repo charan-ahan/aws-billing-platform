@@ -6,13 +6,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Use POSTGRES_URL if available, otherwise fallback to SQLite
+# Get database URL from environment, fallback to SQLite if not set
 DATABASE_URL = os.getenv("POSTGRES_URL", "sqlite:///./billing.db")
 
-# SQLite specific args only if using SQLite
-connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+# Configure engine based on database type
+if DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(
+        DATABASE_URL, connect_args={"check_same_thread": False}
+    )
+else:
+    engine = create_engine(DATABASE_URL)
 
-engine = create_engine(DATABASE_URL, connect_args=connect_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
