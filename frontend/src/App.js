@@ -14,10 +14,44 @@ const API_BASE_URL = 'https://aws-billing-platform.onrender.com';
 // ── Color Palette ──────────────────────────────────────────────────────
 const COLORS = ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe', '#e0e7ff'];
 const PIE_COLORS = ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe'];
+
+// ── Helper Functions ──────────────────────────────────────────────────
 const formatCurrency = (v) => `$${Number(v).toFixed(2)}`;
+const formatShort = (v) => {
+  if (v >= 1e6) return `$${(v/1e6).toFixed(1)}M`;
+  if (v >= 1e3) return `$${(v/1e3).toFixed(1)}K`;
+  return `$${v.toFixed(0)}`;
+};
+
+// ── Dark Tooltip ──────────────────────────────────────────────────────
+const DarkTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{
+      background: 'rgba(13,21,37,0.97)',
+      border: '1px solid #1E293B',
+      borderRadius: 10,
+      padding: '10px 14px',
+      fontSize: 12,
+      color: '#F1F5F9',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.5)'
+    }}>
+      <div style={{ color: '#94A3B8', marginBottom: 6, fontWeight: 600 }}>{label}</div>
+      {payload.map((p, i) => (
+        <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 2 }}>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: p.color, display: 'inline-block' }} />
+          <span style={{ color: '#94A3B8' }}>{p.name}:</span>
+          <span style={{ fontFamily: 'monospace', fontWeight: 700, color: p.color }}>
+            {formatCurrency(p.value)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 // ── Main App ──────────────────────────────────────────────────────────
 function App() {
-  // ── State ────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -25,14 +59,14 @@ function App() {
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [autoRefresh, setAutoRefresh] = useState(false);
 
-  // ── Data States ──────────────────────────────────────────────────────
+  // Data states
   const [summary, setSummary] = useState(null);
   const [monthlyTrend, setMonthlyTrend] = useState([]);
   const [topServices, setTopServices] = useState([]);
   const [regionBreakdown, setRegionBreakdown] = useState([]);
   const [currentMonth, setCurrentMonth] = useState(null);
 
-  // ── Filter States ────────────────────────────────────────────────────
+  // Filters
   const [filters, setFilters] = useState({
     account: 'all',
     service: 'all',
@@ -42,7 +76,7 @@ function App() {
     endDate: ''
   });
 
-  // ── Fetch Real Data ──────────────────────────────────────────────────
+  // Fetch Data
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -58,6 +92,8 @@ function App() {
         axios.get(`${API_BASE_URL}/billing/analytics/region-breakdown${qs}`),
         axios.get(`${API_BASE_URL}/billing/analytics/current-month`)
       ]);
+
+      console.log('Summary data:', summaryRes.data); // Debug log
 
       setSummary(summaryRes.data);
       setMonthlyTrend(monthlyRes.data);
@@ -75,36 +111,21 @@ function App() {
     fetchData();
   }, []);
 
-  // ── Auto-refresh ──────────────────────────────────────────────────────
   useEffect(() => {
     if (!autoRefresh) return;
-    const interval = setInterval(() => {
-      fetchData();
-    }, 300000); // 5 minutes
+    const interval = setInterval(fetchData, 300000);
     return () => clearInterval(interval);
   }, [autoRefresh]);
 
-  // ── Theme toggle ─────────────────────────────────────────────────────
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
   }, [isDark]);
-
-  // ── Helpers ──────────────────────────────────────────────────────────
-  const formatCurrency = (v) => `$${Number(v).toFixed(2)}`;
-  const formatShort = (v) => {
-    if (v >= 1e6) return `$${(v/1e6).toFixed(1)}M`;
-    if (v >= 1e3) return `$${(v/1e3).toFixed(1)}K`;
-    return `$${v.toFixed(0)}`;
-  };
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
-  const applyFilters = () => {
-    fetchData();
-  };
-
+  const applyFilters = () => fetchData();
   const resetFilters = () => {
     setFilters({
       account: 'all',
@@ -116,13 +137,9 @@ function App() {
     });
     fetchData();
   };
+  const exportCSV = () => alert('CSV export coming soon');
 
-  const exportCSV = () => {
-    // Placeholder – implement if needed
-    alert('CSV export coming soon with real data');
-  };
-
-  // ── Loading Skeletons ────────────────────────────────────────────────
+  // ── Loading Skeletons ──────────────────────────────────────────────
   if (loading) {
     return (
       <div className="lens-content" style={{ padding: '22px 26px', display: 'flex', flexDirection: 'column', gap: '18px', maxWidth: '100%', width: '100%' }}>
@@ -151,7 +168,6 @@ function App() {
   // ── Main Render ──────────────────────────────────────────────────────
   return (
     <div className={`lens-app ${isDark ? 'lens-dark' : 'lens-light'} ${sidebarOpen ? 'sidebar-is-open' : ''}`}>
-
       {/* ── Sidebar ── */}
       <aside className={`lens-sidebar ${sidebarOpen ? 'sb-open' : 'sb-closed'}`}>
         <div className="sb-logo-row">
@@ -344,13 +360,10 @@ function App() {
                   </ResponsiveContainer>
                 </div>
               </div>
-
-              {/* Placeholder for Environment or other charts */}
-
             </>
           )}
 
-          {/* ── Other Pages Placeholder ── */}
+          {/* ── Placeholder Pages ── */}
           {currentPage === 'explorer' && (
             <div className="page-content">
               <h2>Cost Explorer</h2>
@@ -374,32 +387,5 @@ function App() {
     </div>
   );
 }
-
-// ── Dark Tooltip Component ────────────────────────────────────────────
-const DarkTooltip = ({ active, payload, label }) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div style={{
-      background: 'rgba(13,21,37,0.97)',
-      border: '1px solid #1E293B',
-      borderRadius: 10,
-      padding: '10px 14px',
-      fontSize: 12,
-      color: '#F1F5F9',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.5)'
-    }}>
-      <div style={{ color: '#94A3B8', marginBottom: 6, fontWeight: 600 }}>{label}</div>
-      {payload.map((p, i) => (
-        <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 2 }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: p.color, display: 'inline-block' }} />
-          <span style={{ color: '#94A3B8' }}>{p.name}:</span>
-          <span style={{ fontFamily: 'monospace', fontWeight: 700, color: p.color }}>
-            ${Number(p.value).toFixed(2)}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-};
 
 export default App;
