@@ -20,6 +20,34 @@ const formatShort = (v) => {
   return `$${v.toFixed(0)}`;
 };
 
+// ── Static mock data for features not yet available via API ──────────
+const STATIC_SAVINGS = {
+  coverage: 68.5,
+  utilization: 72.3,
+  monthly_savings: 34200,
+  total_savings: 208400,
+  commitment: 42000,
+  actual: 31680
+};
+const STATIC_ANOMALIES = [
+  { service: "EC2", region: "us-east-1", spike: "+247%", cost: "$12,400", time: "2h ago", severity: "critical" },
+  { service: "RDS", region: "eu-west-1", spike: "+89%", cost: "$4,210", time: "6h ago", severity: "high" },
+  { service: "Lambda", region: "us-west-2", spike: "+134%", cost: "$2,890", time: "1d ago", severity: "medium" }
+];
+const STATIC_BUDGETS = [
+  { name: "Total Cloud", budget: 300000, actual: 268400, forecast: 285000 },
+  { name: "Compute", budget: 120000, actual: 89420, forecast: 98000 },
+  { name: "Database", budget: 70000, actual: 54180, forecast: 62000 },
+  { name: "Storage", budget: 50000, actual: 38940, forecast: 42000 }
+];
+const STATIC_TRANSACTIONS = [
+  { id: 1, date: "2026-06-25", service: "Amazon EC2", account: "prod-main", amount: 2341.50, category: "Compute" },
+  { id: 2, date: "2026-06-25", service: "Amazon RDS", account: "prod-main", amount: 1876.20, category: "Database" },
+  { id: 3, date: "2026-06-24", service: "Amazon S3", account: "prod-secondary", amount: 432.80, category: "Storage" },
+  { id: 4, date: "2026-06-24", service: "CloudFront", account: "prod-main", amount: 891.40, category: "Networking" },
+  { id: 5, date: "2026-06-23", service: "AWS Lambda", account: "staging", amount: 234.10, category: "Compute" }
+];
+
 // ── Dark Tooltip ───────────────────────────────────────────────────────
 const DarkTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
@@ -202,7 +230,19 @@ function App() {
             </button>
             <button className={`sb-nav-item ${activeNav === 'explorer' ? 'sb-active' : ''}`} onClick={() => setActiveNav('explorer')}>
               <span className="sb-nav-icon">◎</span>
-              {sidebarOpen && <span className="sb-nav-label">Explorer</span>}
+              {sidebarOpen && <span className="sb-nav-label">Cost Explorer</span>}
+            </button>
+            <button className={`sb-nav-item ${activeNav === 'anomalies' ? 'sb-active' : ''}`} onClick={() => setActiveNav('anomalies')}>
+              <span className="sb-nav-icon">◬</span>
+              {sidebarOpen && <span className="sb-nav-label">Anomalies</span>}
+            </button>
+            <button className={`sb-nav-item ${activeNav === 'budgets' ? 'sb-active' : ''}`} onClick={() => setActiveNav('budgets')}>
+              <span className="sb-nav-icon">◉</span>
+              {sidebarOpen && <span className="sb-nav-label">Budgets</span>}
+            </button>
+            <button className={`sb-nav-item ${activeNav === 'savings' ? 'sb-active' : ''}`} onClick={() => setActiveNav('savings')}>
+              <span className="sb-nav-icon">◌</span>
+              {sidebarOpen && <span className="sb-nav-label">Savings</span>}
             </button>
             <button className={`sb-nav-item ${activeNav === 'reports' ? 'sb-active' : ''}`} onClick={() => setActiveNav('reports')}>
               <span className="sb-nav-icon">▤</span>
@@ -232,9 +272,7 @@ function App() {
             <div className="topbar-breadcrumb">
               <span className="bc-root">Lens</span>
               <span className="bc-sep">›</span>
-              <span className="bc-cur">
-                {activeNav.charAt(0).toUpperCase() + activeNav.slice(1)}
-              </span>
+              <span className="bc-cur">{activeNav.charAt(0).toUpperCase()+activeNav.slice(1)}</span>
             </div>
             <div className="topbar-right">
               <div className="topbar-meta">
@@ -254,7 +292,7 @@ function App() {
           {/* Content */}
           <div className="lens-content">
 
-            {/* ── Filter Bar ── */}
+            {/* ── Global Filter Bar ── */}
             <div className="filter-bar-card">
               <div className="filter-bar-inner">
                 <div className="filter-group">
@@ -279,110 +317,418 @@ function App() {
               </div>
             </div>
 
-            {/* ── KPI Cards ── */}
-            <div className="kpi-grid-4">
-              <div className="kpi-card kpi-visible">
-                <div className="kpi-glow" style={{ '--kpi-color': '#2563EB' }} />
-                <div className="kpi-top-row">
-                  <span className="kpi-label-text">Total Cost</span>
-                  <span className="kpi-trend-pill trend-up">↑ 12.4%</span>
+            {/* ── OVERVIEW PAGE ── */}
+            {activeNav === 'overview' && (
+              <>
+                {/* KPI Cards */}
+                <div className="kpi-grid-4">
+                  <div className="kpi-card kpi-visible">
+                    <div className="kpi-glow" style={{ '--kpi-color': '#2563EB' }} />
+                    <div className="kpi-top-row">
+                      <span className="kpi-label-text">Total Cost</span>
+                      <span className="kpi-trend-pill trend-up">↑ 12.4%</span>
+                    </div>
+                    <div className="kpi-value-text">{summary ? formatShort(summary.total_cost) : '$0'}</div>
+                    <div className="kpi-sub-text">Last 30 days</div>
+                  </div>
+                  <div className="kpi-card kpi-visible">
+                    <div className="kpi-glow" style={{ '--kpi-color': '#06B6D4' }} />
+                    <div className="kpi-top-row">
+                      <span className="kpi-label-text">Daily Avg</span>
+                      <span className="kpi-trend-pill trend-down">↓ 3.2%</span>
+                    </div>
+                    <div className="kpi-value-text">{summary ? formatShort(summary.total_cost / 30) : '$0'}</div>
+                    <div className="kpi-sub-text">Per day</div>
+                  </div>
+                  <div className="kpi-card kpi-visible">
+                    <div className="kpi-glow" style={{ '--kpi-color': '#8B5CF6' }} />
+                    <div className="kpi-top-row">
+                      <span className="kpi-label-text">Services</span>
+                      <span className="kpi-trend-pill trend-up">↑ 6.1%</span>
+                    </div>
+                    <div className="kpi-value-text">{summary ? summary.service_count : '0'}</div>
+                    <div className="kpi-sub-text">Active services</div>
+                  </div>
+                  <div className="kpi-card kpi-visible">
+                    <div className="kpi-glow" style={{ '--kpi-color': '#10B981' }} />
+                    <div className="kpi-top-row">
+                      <span className="kpi-label-text">This Month</span>
+                      <span className="kpi-trend-pill trend-up">↑ 18.7%</span>
+                    </div>
+                    <div className="kpi-value-text">{currentMonth ? formatShort(currentMonth.current_month_cost) : '$0'}</div>
+                    <div className="kpi-sub-text">{currentMonth ? `${currentMonth.change_percent?.toFixed(1) || 0}% vs last` : ''}</div>
+                  </div>
                 </div>
-                <div className="kpi-value-text">{summary ? formatShort(summary.total_cost) : '$0'}</div>
-                <div className="kpi-sub-text">Last 30 days</div>
-              </div>
-              <div className="kpi-card kpi-visible">
-                <div className="kpi-glow" style={{ '--kpi-color': '#06B6D4' }} />
-                <div className="kpi-top-row">
-                  <span className="kpi-label-text">Daily Avg</span>
-                  <span className="kpi-trend-pill trend-down">↓ 3.2%</span>
-                </div>
-                <div className="kpi-value-text">{summary ? formatShort(summary.total_cost / 30) : '$0'}</div>
-                <div className="kpi-sub-text">Per day</div>
-              </div>
-              <div className="kpi-card kpi-visible">
-                <div className="kpi-glow" style={{ '--kpi-color': '#8B5CF6' }} />
-                <div className="kpi-top-row">
-                  <span className="kpi-label-text">Services</span>
-                  <span className="kpi-trend-pill trend-up">↑ 6.1%</span>
-                </div>
-                <div className="kpi-value-text">{summary ? summary.service_count : '0'}</div>
-                <div className="kpi-sub-text">Active services</div>
-              </div>
-              <div className="kpi-card kpi-visible">
-                <div className="kpi-glow" style={{ '--kpi-color': '#10B981' }} />
-                <div className="kpi-top-row">
-                  <span className="kpi-label-text">This Month</span>
-                  <span className="kpi-trend-pill trend-up">↑ 18.7%</span>
-                </div>
-                <div className="kpi-value-text">{currentMonth ? formatShort(currentMonth.current_month_cost) : '$0'}</div>
-                <div className="kpi-sub-text">{currentMonth ? `${currentMonth.change_percent?.toFixed(1) || 0}% vs last` : ''}</div>
-              </div>
-            </div>
 
-            {/* ── Cost Trend ── */}
-            <div className="lens-card">
-              <div className="sec-header">
-                <span className="sec-title">Cost Trend</span>
-                <span className="sec-badge">Live</span>
-              </div>
-              <div className="view-toggle-row">
-                {['hourly','daily','monthly'].map(v => (
-                  <button key={v} className={`view-toggle-btn ${timeGrain===v?'vt-active':''}`} onClick={() => setTimeGrain(v)}>
-                    {v.charAt(0).toUpperCase()+v.slice(1)}
-                  </button>
-                ))}
-              </div>
-              <ResponsiveContainer width="100%" height={260}>
-                <ComposedChart data={monthlyTrend}>
-                  <defs>
-                    <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#2563EB" stopOpacity="0.25" />
-                      <stop offset="100%" stopColor="#2563EB" stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                  <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#94A3B8' }} />
-                  <YAxis tick={{ fontSize: 10, fill: '#94A3B8' }} tickFormatter={v => formatShort(v)} />
-                  <Tooltip content={<DarkTooltip />} />
-                  <Area type="monotone" dataKey="total_cost" stroke="#2563EB" fill="url(#trendGrad)" strokeWidth={2} />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* ── Services & Regions ── */}
-            <div className="grid-2col">
-              <div className="lens-card">
-                <div className="sec-header">
-                  <span className="sec-title">Top Services</span>
-                  <span className="sec-badge">by cost</span>
+                {/* Cost Trend Chart */}
+                <div className="lens-card">
+                  <div className="sec-header">
+                    <span className="sec-title">Cost Trend</span>
+                    <span className="sec-badge">Live</span>
+                  </div>
+                  <div className="view-toggle-row">
+                    {['hourly','daily','monthly'].map(v => (
+                      <button key={v} className={`view-toggle-btn ${timeGrain===v?'vt-active':''}`} onClick={() => setTimeGrain(v)}>
+                        {v.charAt(0).toUpperCase()+v.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <ComposedChart data={monthlyTrend}>
+                      <defs>
+                        <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#2563EB" stopOpacity="0.25" />
+                          <stop offset="100%" stopColor="#2563EB" stopOpacity="0" />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                      <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#94A3B8' }} />
+                      <YAxis tick={{ fontSize: 10, fill: '#94A3B8' }} tickFormatter={v => formatShort(v)} />
+                      <Tooltip content={<DarkTooltip />} />
+                      <Area type="monotone" dataKey="total_cost" stroke="#2563EB" fill="url(#trendGrad)" strokeWidth={2} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
                 </div>
-                <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={topServices} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" horizontal={false} />
-                    <XAxis type="number" tick={{ fontSize: 10, fill: '#94A3B8' }} tickFormatter={v => formatShort(v)} />
-                    <YAxis dataKey="service" type="category" tick={{ fontSize: 10, fill: '#94A3B8' }} width={100} />
-                    <Tooltip formatter={(v) => formatCurrency(v)} />
-                    <Bar dataKey="total_cost" fill="#3b82f6" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
 
-              <div className="lens-card">
-                <div className="sec-header">
-                  <span className="sec-title">Region Breakdown</span>
-                  <span className="sec-badge">geographic</span>
+                {/* Services & Regions */}
+                <div className="grid-2col">
+                  <div className="lens-card">
+                    <div className="sec-header">
+                      <span className="sec-title">Top Services</span>
+                      <span className="sec-badge">by cost</span>
+                    </div>
+                    <ResponsiveContainer width="100%" height={260}>
+                      <BarChart data={topServices} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" horizontal={false} />
+                        <XAxis type="number" tick={{ fontSize: 10, fill: '#94A3B8' }} tickFormatter={v => formatShort(v)} />
+                        <YAxis dataKey="service" type="category" tick={{ fontSize: 10, fill: '#94A3B8' }} width={100} />
+                        <Tooltip formatter={(v) => formatCurrency(v)} />
+                        <Bar dataKey="total_cost" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <div className="lens-card">
+                    <div className="sec-header">
+                      <span className="sec-title">Region Breakdown</span>
+                      <span className="sec-badge">geographic</span>
+                    </div>
+                    <ResponsiveContainer width="100%" height={260}>
+                      <BarChart data={regionBreakdown}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                        <XAxis dataKey="region" tick={{ fontSize: 10, fill: '#94A3B8' }} />
+                        <YAxis tick={{ fontSize: 10, fill: '#94A3B8' }} tickFormatter={v => formatShort(v)} />
+                        <Tooltip formatter={(v) => formatCurrency(v)} />
+                        <Bar dataKey="total_cost" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
-                <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={regionBreakdown}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                    <XAxis dataKey="region" tick={{ fontSize: 10, fill: '#94A3B8' }} />
-                    <YAxis tick={{ fontSize: 10, fill: '#94A3B8' }} tickFormatter={v => formatShort(v)} />
-                    <Tooltip formatter={(v) => formatCurrency(v)} />
-                    <Bar dataKey="total_cost" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+
+                {/* Environment Breakdown & Data Transfer (mock) */}
+                <div className="grid-2col">
+                  <div className="lens-card">
+                    <div className="sec-header">
+                      <span className="sec-title">Environment</span>
+                      <span className="sec-badge">breakdown</span>
+                    </div>
+                    <ResponsiveContainer width="100%" height={220}>
+                      <PieChart>
+                        <Pie data={[
+                          { name: "Production", value: 178400, color: "#2563EB" },
+                          { name: "Staging", value: 56200, color: "#8B5CF6" },
+                          { name: "Development", value: 22400, color: "#06B6D4" },
+                          { name: "QA", value: 11400, color: "#10B981" }
+                        ]} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" nameKey="name" label={({name, value}) => `${name}: $${(value/1000).toFixed(0)}K`} labelLine={false}>
+                          <Cell fill="#2563EB" /><Cell fill="#8B5CF6" /><Cell fill="#06B6D4" /><Cell fill="#10B981" />
+                        </Pie>
+                        <Tooltip formatter={(v) => formatCurrency(v)} />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <div className="lens-card">
+                    <div className="sec-header">
+                      <span className="sec-title">Data Transfer</span>
+                      <span className="sec-badge">network</span>
+                    </div>
+                    <ResponsiveContainer width="100%" height={220}>
+                      <LineChart data={[
+                        { month: 'Jun', in: 4500, out: 8000, vpc: 3500 },
+                        { month: 'Jul', in: 4200, out: 7200, vpc: 3100 },
+                        { month: 'Aug', in: 4000, out: 6500, vpc: 2800 }
+                      ]}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                        <XAxis dataKey="month" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Line type="monotone" dataKey="in" stroke="#3b82f6" name="Data In" />
+                        <Line type="monotone" dataKey="out" stroke="#ef4444" name="Data Out" />
+                        <Line type="monotone" dataKey="vpc" stroke="#22c55e" name="VPC Transfer" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Savings Plans Panel (static mock) */}
+                <div className="lens-card">
+                  <div className="sec-header">
+                    <span className="sec-title">Savings Plans & RI</span>
+                    <span className="sec-badge">optimization</span>
+                  </div>
+                  <div className="savings-grid">
+                    {[
+                      { label:'Coverage', val:`${STATIC_SAVINGS.coverage}%` },
+                      { label:'Utilization', val:`${STATIC_SAVINGS.utilization}%` },
+                      { label:'Monthly Saved', val: formatShort(STATIC_SAVINGS.monthly_savings) },
+                      { label:'Total Saved', val: formatShort(STATIC_SAVINGS.total_savings) },
+                      { label:'Commitment', val: formatShort(STATIC_SAVINGS.commitment) },
+                      { label:'Actual Usage', val: formatShort(STATIC_SAVINGS.actual) }
+                    ].map((s,i) => (
+                      <div key={i} className="savings-stat-card">
+                        <span className="ss-label">{s.label}</span>
+                        <strong className="ss-val">{s.val}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Recent Transactions (static mock) */}
+                <div className="lens-card">
+                  <div className="sec-header">
+                    <span className="sec-title">Recent Transactions</span>
+                    <span className="sec-badge">last 5</span>
+                  </div>
+                  <div className="table-wrap">
+                    <table className="lens-table">
+                      <thead><tr><th>Date</th><th>Service</th><th>Account</th><th>Category</th><th>Amount</th></tr></thead>
+                      <tbody>
+                        {STATIC_TRANSACTIONS.map(tx => (
+                          <tr key={tx.id}>
+                            <td>{tx.date}</td>
+                            <td>{tx.service}</td>
+                            <td>{tx.account}</td>
+                            <td><span className={`cat-badge cat-${tx.category}`}>{tx.category}</span></td>
+                            <td>{formatCurrency(tx.amount)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* ── COST EXPLORER PAGE ── */}
+            {activeNav === 'explorer' && (
+              <>
+                <div className="page-hdr">
+                  <h2 className="page-title">Cost Explorer</h2>
+                  <p className="page-sub">Drill down into your cloud spending across all dimensions.</p>
+                </div>
+                <div className="lens-card">
+                  <div className="sec-header">
+                    <span className="sec-title">Monthly Cost Breakdown</span>
+                    <span className="sec-badge">12 months</span>
+                  </div>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={monthlyTrend}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                      <XAxis dataKey="month" />
+                      <YAxis tickFormatter={v => formatShort(v)} />
+                      <Tooltip formatter={(v) => formatCurrency(v)} />
+                      <Bar dataKey="total_cost" fill="#3b82f6" radius={[4,4,0,0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="grid-2col">
+                  <div className="lens-card">
+                    <div className="sec-header"><span className="sec-title">Top Services</span></div>
+                    <ResponsiveContainer width="100%" height={260}>
+                      <BarChart data={topServices} layout="vertical">
+                        <XAxis type="number" tickFormatter={v => formatShort(v)} />
+                        <YAxis dataKey="service" type="category" width={100} />
+                        <Tooltip formatter={(v) => formatCurrency(v)} />
+                        <Bar dataKey="total_cost" fill="#3b82f6" radius={[0,4,4,0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="lens-card">
+                    <div className="sec-header"><span className="sec-title">Region Breakdown</span></div>
+                    <ResponsiveContainer width="100%" height={260}>
+                      <BarChart data={regionBreakdown}>
+                        <XAxis dataKey="region" />
+                        <YAxis tickFormatter={v => formatShort(v)} />
+                        <Tooltip formatter={(v) => formatCurrency(v)} />
+                        <Bar dataKey="total_cost" fill="#8b5cf6" radius={[4,4,0,0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* ── ANOMALIES PAGE ── */}
+            {activeNav === 'anomalies' && (
+              <>
+                <div className="page-hdr">
+                  <h2 className="page-title">Anomaly Detection</h2>
+                  <p className="page-sub">ML-powered alerts for unusual cost spikes.</p>
+                </div>
+                <div className="anom-stats-row">
+                  {[{label:'Critical',val:3,c:'#EF4444'},{label:'High',val:7,c:'#F59E0B'},{label:'Medium',val:12,c:'#8B5CF6'},{label:'Resolved',val:24,c:'#10B981'}].map((s,i) => (
+                    <div key={i} className="lens-card anom-stat">
+                      <span className="anom-stat-num" style={{color:s.c}}>{s.val}</span>
+                      <span className="anom-stat-label">{s.label}</span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {STATIC_ANOMALIES.map((a,i) => (
+                    <div key={i} className="anomaly-card" style={{'--sev': a.severity==='critical'?'#EF4444':a.severity==='high'?'#F59E0B':'#8B5CF6'}}>
+                      <div className="anomaly-pulse" />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <span style={{ fontWeight: 700, fontSize: 14 }}>{a.service}</span>
+                        <span style={{ color: '#EF4444', fontWeight: 800, fontFamily: 'monospace' }}>{a.spike}</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: 16, fontSize: 12, color: '#94A3B8' }}>
+                        <span>{a.region}</span>
+                        <span>{a.cost}</span>
+                        <span>{a.time}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* ── BUDGETS PAGE ── */}
+            {activeNav === 'budgets' && (
+              <>
+                <div className="page-hdr">
+                  <h2 className="page-title">Budget Tracker</h2>
+                  <p className="page-sub">Track spend against allocated budgets.</p>
+                </div>
+                <div className="lens-card">
+                  <div className="sec-header">
+                    <span className="sec-title">Budget Overview</span>
+                    <span className="sec-badge">{((BUDGET_TOTAL_ACTUAL/BUDGET_TOTAL_BUDGET)*100).toFixed(1)}% used</span>
+                  </div>
+                  {/* Budget summary bar */}
+                  <div style={{ margin: '12px 0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span>Budget: ${(BUDGET_TOTAL_BUDGET/1000).toFixed(0)}K</span>
+                      <span>Actual: ${(BUDGET_TOTAL_ACTUAL/1000).toFixed(0)}K</span>
+                      <span>Remaining: ${((BUDGET_TOTAL_BUDGET-BUDGET_TOTAL_ACTUAL)/1000).toFixed(0)}K</span>
+                    </div>
+                    <div style={{ height: 8, background: '#1E293B', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${(BUDGET_TOTAL_ACTUAL/BUDGET_TOTAL_BUDGET)*100}%`, background: `linear-gradient(90deg,#10B981,#F59E0B,#EF4444)`, borderRadius: 4 }} />
+                    </div>
+                  </div>
+                </div>
+                {STATIC_BUDGETS.map((b,i) => {
+                  const pct = (b.actual/b.budget)*100;
+                  return (
+                    <div key={i} className="lens-card">
+                      <div className="budget-row-inner">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                          <span style={{ fontWeight: 600, fontSize: 13 }}>{b.name}</span>
+                          <span style={{ fontFamily: 'monospace', fontSize: 12 }}>
+                            <span style={{ color: pct>85?'#EF4444':'#10B981', fontWeight: 700 }}>{formatShort(b.actual)}</span>
+                            <span style={{ color: '#475569' }}> / {formatShort(b.budget)}</span>
+                          </span>
+                        </div>
+                        <div style={{ height: 6, background: '#1E293B', borderRadius: 3, position: 'relative' }}>
+                          <div style={{ height: '100%', width: `${Math.min(pct,100)}%`, background: pct>85?'#EF4444':'#2563EB', borderRadius: 3, transition: 'width 0.6s ease' }} />
+                          <div style={{ position: 'absolute', top: -4, left: `${Math.min((b.forecast/b.budget)*100,100)}%`, width: 2, height: 12, background: '#F59E0B', borderRadius: 1, transform: 'translateX(-50%)' }} />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#475569' }}>
+                          <span>{pct.toFixed(1)}% used</span>
+                          <span style={{ color: '#F59E0B' }}>Forecast: {formatShort(b.forecast)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
+            )}
+
+            {/* ── SAVINGS PAGE ── */}
+            {activeNav === 'savings' && (
+              <>
+                <div className="page-hdr">
+                  <h2 className="page-title">Savings Plans</h2>
+                  <p className="page-sub">RI and Savings Plans coverage, utilization, and optimization.</p>
+                </div>
+                <div className="kpi-grid-4">
+                  <KPICard label="Coverage" value={`${STATIC_SAVINGS.coverage}%`} sub="of eligible spend" trend={4.2} color="#10B981" delay={0} />
+                  <KPICard label="Utilization" value={`${STATIC_SAVINGS.utilization}%`} sub="of committed" trend={1.8} color="#2563EB" delay={80} />
+                  <KPICard label="Total Saved" value={formatShort(STATIC_SAVINGS.monthly_savings)} sub="This month" trend={18.7} color="#8B5CF6" delay={160} />
+                  <KPICard label="On-Demand Waste" value={formatShort(12400)} sub="Uncovered spend" trend={-8.3} color="#EF4444" delay={240} />
+                </div>
+                <div className="lens-card">
+                  <div className="sec-header"><span className="sec-title">Coverage Over Time</span></div>
+                  <ResponsiveContainer width="100%" height={240}>
+                    <BarChart data={monthlyTrend.map(d => ({ month: d.month, covered: d.total_cost*0.685, uncovered: d.total_cost*0.315 }))}>
+                      <XAxis dataKey="month" />
+                      <YAxis tickFormatter={v => formatShort(v)} />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="covered" name="Covered" fill="#10B981" stackId="a" />
+                      <Bar dataKey="uncovered" name="Uncovered" fill="#EF4444" stackId="a" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </>
+            )}
+
+            {/* ── REPORTS PAGE ── */}
+            {activeNav === 'reports' && (
+              <>
+                <div className="page-hdr">
+                  <h2 className="page-title">Reports</h2>
+                  <p className="page-sub">Generate and export cost intelligence reports.</p>
+                </div>
+                <div className="reports-grid">
+                  {["Monthly Executive Summary","Service Cost Breakdown","Budget vs Actual","Anomaly Report","Savings Opportunities","Tag Compliance"].map((r,i) => (
+                    <div key={i} className="lens-card report-card-item">
+                      <div className="report-icon-lg">▤</div>
+                      <div className="report-card-name">{r}</div>
+                      <div className="report-card-actions">
+                        <button className="report-gen-btn" onClick={exportCSV}>Generate CSV</button>
+                        <button className="report-sched-btn">Schedule</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* ── SETTINGS PAGE ── */}
+            {activeNav === 'settings' && (
+              <>
+                <div className="page-hdr">
+                  <h2 className="page-title">Settings</h2>
+                  <p className="page-sub">Configure your account, integrations, and notifications.</p>
+                </div>
+                <div className="grid-2col">
+                  {[
+                    {title:'AWS Integration',sub:'Connect your AWS accounts via IAM role.'},
+                    {title:'Notifications', sub:'Set up cost alert thresholds and email digests.'},
+                    {title:'Budget Alerts', sub:'Configure budget alert percentages.'},
+                    {title:'Team Access', sub:'Manage role-based access control.'}
+                  ].map((s,i) => (
+                    <div key={i} className="lens-card settings-card">
+                      <div className="settings-title">{s.title}</div>
+                      <div className="settings-sub">{s.sub}</div>
+                      <button className="settings-configure-btn">Configure →</button>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
 
           </div>{/* /lens-content */}
         </div>{/* /lens-main */}
@@ -390,5 +736,29 @@ function App() {
     </ErrorBoundary>
   );
 }
+
+// ── Reusable KPI Card ──────────────────────────────────────────────────
+function KPICard({ label, value, sub, trend, color="#2563EB", delay=0 }) {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setVisible(true), delay); return () => clearTimeout(t); }, [delay]);
+  const isPos = trend > 0;
+  return (
+    <div className={`kpi-card ${visible ? 'kpi-visible' : ''}`} style={{'--kpi-delay': `${delay}ms`,'--kpi-color': color}}>
+      <div className="kpi-glow" />
+      <div className="kpi-top-row">
+        <span className="kpi-label-text">{label}</span>
+        <span className={`kpi-trend-pill ${isPos ? 'trend-up' : 'trend-down'}`}>
+          {isPos ? '↑' : '↓'} {Math.abs(trend).toFixed(1)}%
+        </span>
+      </div>
+      <div className="kpi-value-text">{value}</div>
+      <div className="kpi-sub-text">{sub}</div>
+    </div>
+  );
+}
+
+// ── Static budget totals for summary bar ─────────────────────────────
+const BUDGET_TOTAL_BUDGET = 300000;
+const BUDGET_TOTAL_ACTUAL = 268400;
 
 export default App;
